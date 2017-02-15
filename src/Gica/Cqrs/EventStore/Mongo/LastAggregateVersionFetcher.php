@@ -12,7 +12,7 @@ class LastAggregateVersionFetcher
     {
         $cursor = $collection->find(
             [
-                'aggregateId' => new \MongoDB\BSON\ObjectID((string)$aggregateId),
+                'aggregateId' => (string)$aggregateId,
                 'aggregateClass' => $aggregateClass,
             ],
             [

@@ -6,8 +6,6 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
-use MongoDB\BSON\ObjectID;
-
 class MongoEventStore implements \Gica\Cqrs\EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
@@ -69,7 +67,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
                 'version'             => 1 + $expectedVersion,
                 'sequence'            => 1 + $expectedSequence,
                 'createdAt'           => new \MongoDB\BSON\UTCDateTime(microtime(true) * 1000),
-                'authenticatedUserId' => $authenticatedUserId ? new ObjectID((string)$authenticatedUserId) : null,
+                'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
                 'events'              => $this->packEvents($eventsWithMetaData),
             ]);
         } catch (\MongoDB\Driver\Exception\BulkWriteException $bulkWriteException) {
@@ -77,12 +75,12 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         }
     }
 
-    private function packEvents($events):array
+    private function packEvents($events): array
     {
         return array_map([$this, 'packEvent'], $events);
     }
 
-    private function packEvent(\Gica\Cqrs\Event\EventWithMetaData $eventWithMetaData):array
+    private function packEvent(\Gica\Cqrs\Event\EventWithMetaData $eventWithMetaData): array
     {
         ob_start();
         var_dump($eventWithMetaData->getEvent());
@@ -108,7 +106,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
 
-    public function fetchLatestSequence():int
+    public function fetchLatestSequence(): int
     {
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
