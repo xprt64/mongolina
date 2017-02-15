@@ -2,7 +2,7 @@
   "name": "xprt64/cqrs-eventstore-mongodb",
   "description": "MongoDB implementation for CQRS Event Store for PHP",
   "minimum-stability": "stable",
-  "license": "proprietary",
+  "license": "MIT",
   "authors": [
     {
       "name": "Constantin GALBENU",
