@@ -59,7 +59,7 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
         return $this->version;
     }
 
-    private function fetchLatestVersion(string $aggregateClass, \Gica\Types\Guid $aggregateId):int
+    private function fetchLatestVersion(string $aggregateClass, $aggregateId):int
     {
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
@@ -69,11 +69,11 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
-    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, \Gica\Types\Guid $aggregateId):\MongoDB\Driver\Cursor
+    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId):\MongoDB\Driver\Cursor
     {
         $cursor = $this->collection->find(
             [
-                'aggregateId'    => new \MongoDB\BSON\ObjectID($aggregateId->__toString()),
+                'aggregateId'    => new \MongoDB\BSON\ObjectID((string)$aggregateId),
                 'aggregateClass' => $aggregateClass,
                 'version'        => [
                     '$lte' => $this->version,

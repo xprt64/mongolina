@@ -8,11 +8,11 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 class LastAggregateVersionFetcher
 {
-    public function fetchLatestVersion(\MongoDB\Collection $collection, string $aggregateClass, \Gica\Types\Guid $aggregateId):int
+    public function fetchLatestVersion(\MongoDB\Collection $collection, string $aggregateClass, $aggregateId):int
     {
         $cursor = $collection->find(
             [
-                'aggregateId' => new \MongoDB\BSON\ObjectID($aggregateId->__toString()),
+                'aggregateId' => new \MongoDB\BSON\ObjectID((string)$aggregateId),
                 'aggregateClass' => $aggregateClass,
             ],
             [

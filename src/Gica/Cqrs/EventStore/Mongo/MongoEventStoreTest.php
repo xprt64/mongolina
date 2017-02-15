@@ -6,6 +6,9 @@
 namespace tests\unit\Gica\Cqrs\EventStore\Mongo;
 
 
+use Gica\Cqrs\Event\EventWithMetaData;
+use Gica\Cqrs\Event\MetaData;
+
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 {
 
@@ -27,7 +30,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $aggregateId = new \Gica\Types\Guid();
         $aggregateClass = 'aggClass';
 
-        $events = [new Event1(11), new Event2(22)];
+        $events = $this->wrapEventsWithMetadata($aggregateClass, $aggregateId, [new Event1(11), new Event2(22)]);
 
         $eventStore->appendEventsForAggregate($aggregateId, $aggregateClass, $events, -1, 0);
 
@@ -39,8 +42,26 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(2, $events);
 
-        $this->assertInstanceOf(Event1::class, $events[0]);
-        $this->assertInstanceOf(Event2::class, $events[1]);
+        $this->assertInstanceOf(Event1::class, $events[0]->getEvent());
+        $this->assertInstanceOf(Event2::class, $events[1]->getEvent());
+    }
+
+    private function wrapEventsWithMetadata($aggregateClass, $aggregateId, $events){
+        return array_map(function($event) use ($aggregateClass, $aggregateId){
+            return $this->wrapEventWithMetadata($aggregateClass, $aggregateId, $event);
+        }, $events);
+    }
+
+    private function wrapEventWithMetadata($aggregateClass, $aggregateId, $event){
+        return new EventWithMetaData(
+            $event,
+            new MetaData(
+                $aggregateId,
+                $aggregateClass,
+                new \DateTimeImmutable(),
+                null
+            )
+        );
     }
 
     /**
@@ -63,11 +84,11 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $aggregateId = new \Gica\Types\Guid();
 
-        $events = [new Event1(11), new Event2(22)];
+        $events = $this->wrapEventsWithMetadata($aggregateId, 'aggClass', [new Event1(11), new Event2(22)]);
 
-        $eventStore->appendEventsForAggregate($aggregateId, $events, -1);
+        $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);
 
-        $eventStore->appendEventsForAggregate($aggregateId, $events, -1);//should fail
+        $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);//should fail
     }
 }
 

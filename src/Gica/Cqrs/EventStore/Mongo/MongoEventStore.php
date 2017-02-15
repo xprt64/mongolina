@@ -29,7 +29,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         $this->eventSerializer = $eventSerializer;
     }
 
-    public function loadEventsForAggregate(string $aggregateClass, \Gica\Types\Guid $aggregateId): \Gica\Cqrs\EventStore\AggregateEventStream
+    public function loadEventsForAggregate(string $aggregateClass, $aggregateId): \Gica\Cqrs\EventStore\AggregateEventStream
     {
         return new MongoAggregateAllEventStream(
             $this->collection,
@@ -53,7 +53,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         $this->collection->drop();
     }
 
-    public function appendEventsForAggregate(\Gica\Types\Guid $aggregateId, string $aggregateClass, $eventsWithMetaData, int $expectedVersion, int $expectedSequence)
+    public function appendEventsForAggregate($aggregateId, string $aggregateClass, $eventsWithMetaData, int $expectedVersion, int $expectedSequence)
     {
         if (!$eventsWithMetaData) {
             return;
@@ -103,7 +103,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
             $this->eventSerializer);
     }
 
-    public function getAggregateVersion(string $aggregateClass, \Gica\Types\Guid $aggregateId)
+    public function getAggregateVersion(string $aggregateClass, $aggregateId)
     {
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
