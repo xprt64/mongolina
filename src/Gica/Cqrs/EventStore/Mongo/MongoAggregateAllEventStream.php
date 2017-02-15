@@ -72,7 +72,7 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
     {
         $cursor = $this->collection->find(
             [
-                'aggregateId'    => new \MongoDB\BSON\ObjectID((string)$aggregateId),
+                'aggregateId'    => (string)$aggregateId,
                 'aggregateClass' => $aggregateClass,
                 'version'        => [
                     '$lte' => $this->version,
