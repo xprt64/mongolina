@@ -64,7 +64,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         try {
             $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
             $this->collection->insertOne([
-                'aggregateId'         => new \MongoDB\BSON\ObjectID((string)$aggregateId),
+                'aggregateId'         => (string)$aggregateId,
                 'aggregateClass'      => $aggregateClass,
                 'version'             => 1 + $expectedVersion,
                 'sequence'            => 1 + $expectedSequence,
