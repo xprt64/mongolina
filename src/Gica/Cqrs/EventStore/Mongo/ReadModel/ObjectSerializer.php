@@ -12,6 +12,7 @@ use Gica\Types\Guid;
 use Gica\Types\Set;
 use Gica\Types\SerializableInterface;
 use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\UTCDateTime;
 
 class ObjectSerializer
 {
@@ -39,7 +40,7 @@ class ObjectSerializer
             }
 
             if ($object instanceof \DateTimeInterface) {
-                return DateConverter::UTCDateTime($object);
+                return new UTCDateTime($object->getTimestamp()*1000);
             }
             return 'unserializable ' . get_class($object);
         }

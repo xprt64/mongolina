@@ -27,7 +27,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $eventStore->dropStore();
         $eventStore->createStore();
 
-        $aggregateId = new \Gica\Types\Guid();
+        $aggregateId = 123;
         $aggregateClass = 'aggClass';
 
         $events = $this->wrapEventsWithMetadata($aggregateClass, $aggregateId, [new Event1(11), new Event2(22)]);
@@ -82,7 +82,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $eventStore->dropStore();
         $eventStore->createStore();
 
-        $aggregateId = new \Gica\Types\Guid();
+        $aggregateId = 123;
 
         $events = $this->wrapEventsWithMetadata($aggregateId, 'aggClass', [new Event1(11), new Event2(22)]);
 

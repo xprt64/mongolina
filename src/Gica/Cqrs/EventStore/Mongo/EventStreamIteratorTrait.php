@@ -41,9 +41,10 @@ trait EventStreamIteratorTrait
         $dateCreated = \DateTimeImmutable::createFromMutable($createdAt->toDateTime());
 
         return new MetaData(
-            new Guid((string)$document['aggregateId']),
+            (string)$document['aggregateId'],
             $document['aggregateClass'],
             $dateCreated,
-            $document['authenticatedUserId'] ? new Guid($document['authenticatedUserId']) : null);
+            $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
+        );
     }
 }
