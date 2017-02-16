@@ -6,6 +6,14 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use Gica\Cqrs\Event\EventWithMetaData;
+use Gica\Cqrs\EventStore\EventStream;
+use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
+use Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher;
+use Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher;
+use Gica\Lib\ObjectToArrayConverter;
+use MongoDB\Driver\Exception\BulkWriteException;
+
 class MongoEventStore implements \Gica\Cqrs\EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
@@ -17,14 +25,20 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
      * @var \Gica\Cqrs\EventStore\Mongo\EventSerializer
      */
     private $eventSerializer;
+    /**
+     * @var ObjectToArrayConverter
+     */
+    private $objectToArrayConverter;
 
     public function __construct(
         \MongoDB\Collection $collection,
-        \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer
+        \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer,
+        ObjectToArrayConverter $objectToArrayConverter
     )
     {
         $this->collection = $collection;
         $this->eventSerializer = $eventSerializer;
+        $this->objectToArrayConverter = $objectToArrayConverter;
     }
 
     public function loadEventsForAggregate(string $aggregateClass, $aggregateId): \Gica\Cqrs\EventStore\AggregateEventStream
@@ -70,8 +84,8 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
                 'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
                 'events'              => $this->packEvents($eventsWithMetaData),
             ]);
-        } catch (\MongoDB\Driver\Exception\BulkWriteException $bulkWriteException) {
-            throw new \Gica\Cqrs\EventStore\Exception\ConcurrentModificationException($bulkWriteException->getMessage());
+        } catch (BulkWriteException $bulkWriteException) {
+            throw new ConcurrentModificationException($bulkWriteException->getMessage());
         }
     }
 
@@ -80,20 +94,16 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         return array_map([$this, 'packEvent'], $events);
     }
 
-    private function packEvent(\Gica\Cqrs\Event\EventWithMetaData $eventWithMetaData): array
+    private function packEvent(EventWithMetaData $eventWithMetaData): array
     {
-        ob_start();
-        var_dump($eventWithMetaData->getEvent());
-        $dump = ob_get_clean();
-
         return array_merge([
             self::EVENT_CLASS => get_class($eventWithMetaData->getEvent()),
             'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
-            'dump'            => $dump,
+            'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
         ]);
     }
 
-    public function loadEventsByClassNames(array $eventClasses): \Gica\Cqrs\EventStore\EventStream
+    public function loadEventsByClassNames(array $eventClasses): EventStream
     {
         return new MongoAllEventByClassesStream(
             $this->collection,
@@ -103,12 +113,12 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
 
     public function getAggregateVersion(string $aggregateClass, $aggregateId)
     {
-        return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
+        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
 
     public function fetchLatestSequence(): int
     {
-        return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
+        return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
 }

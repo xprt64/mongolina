@@ -8,6 +8,9 @@ namespace tests\unit\Gica\Cqrs\EventStore\Mongo;
 
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\Event\MetaData;
+use Gica\Cqrs\EventStore\Mongo\EventSerializer;
+use Gica\Cqrs\EventStore\Mongo\MongoEventStore;
+use Gica\Lib\ObjectToArrayConverter;
 
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 {
@@ -22,7 +25,10 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $collection = $db->selectCollection('eventStore');
 
-        $eventStore = new \Gica\Cqrs\EventStore\Mongo\MongoEventStore($collection, new \Gica\Cqrs\EventStore\Mongo\EventSerializer());
+        $eventStore = new MongoEventStore(
+            $collection,
+            new EventSerializer(),
+            new ObjectToArrayConverter());
 
         $eventStore->dropStore();
         $eventStore->createStore();
@@ -46,13 +52,15 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf(Event2::class, $events[1]->getEvent());
     }
 
-    private function wrapEventsWithMetadata($aggregateClass, $aggregateId, $events){
-        return array_map(function($event) use ($aggregateClass, $aggregateId){
+    private function wrapEventsWithMetadata($aggregateClass, $aggregateId, $events)
+    {
+        return array_map(function ($event) use ($aggregateClass, $aggregateId) {
             return $this->wrapEventWithMetadata($aggregateClass, $aggregateId, $event);
         }, $events);
     }
 
-    private function wrapEventWithMetadata($aggregateClass, $aggregateId, $event){
+    private function wrapEventWithMetadata($aggregateClass, $aggregateId, $event)
+    {
         return new EventWithMetaData(
             $event,
             new MetaData(
@@ -77,7 +85,10 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $collection = $db->selectCollection('eventStore');
 
-        $eventStore = new \Gica\Cqrs\EventStore\Mongo\MongoEventStore($collection, new \Gica\Cqrs\EventStore\Mongo\EventSerializer());
+        $eventStore = new MongoEventStore(
+            $collection,
+            new EventSerializer(),
+            new ObjectToArrayConverter());
 
         $eventStore->dropStore();
         $eventStore->createStore();
