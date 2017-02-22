@@ -88,12 +88,16 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
             $options['skip'] = $this->skip;
         }
 
+        $filter = [];
+
+        if ($this->eventClassNames) {
+            $filter[MongoEventStore::EVENTS_EVENT_CLASS] = [
+                '$in' => $this->eventClassNames,
+            ];
+        }
+
         $cursor = $this->collection->find(
-            [
-                MongoEventStore::EVENTS_EVENT_CLASS => [
-                    '$in' => $this->eventClassNames,
-                ],
-            ],
+            $filter,
             $options
         );
 
