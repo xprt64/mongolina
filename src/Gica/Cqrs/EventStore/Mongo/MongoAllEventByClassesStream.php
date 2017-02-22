@@ -62,6 +62,11 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
         $this->skip = $numberOfCommitsToBeSkipped;
     }
 
+    public function countCommits():int
+    {
+        return $this->collection->count($this->getFilter());
+    }
+
     /**
      * @inheritdoc
      */
@@ -88,16 +93,8 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
             $options['skip'] = $this->skip;
         }
 
-        $filter = [];
-
-        if ($this->eventClassNames) {
-            $filter[MongoEventStore::EVENTS_EVENT_CLASS] = [
-                '$in' => $this->eventClassNames,
-            ];
-        }
-
         $cursor = $this->collection->find(
-            $filter,
+            $this->getFilter(),
             $options
         );
 
@@ -128,5 +125,18 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     private function isInterestingEvent($eventClass)
     {
         return empty($this->eventClassNames) || in_array($eventClass, $this->eventClassNames);
+    }
+
+    private function getFilter(): array
+    {
+        $filter = [];
+
+        if ($this->eventClassNames) {
+            $filter[MongoEventStore::EVENTS_EVENT_CLASS] = [
+                '$in' => $this->eventClassNames,
+            ];
+            return $filter;
+        }
+        return $filter;
     }
 }
