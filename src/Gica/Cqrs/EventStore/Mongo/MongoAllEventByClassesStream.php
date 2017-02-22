@@ -168,7 +168,7 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
                 $result[] = new EventWithMetaData($event, $metaData);
             }
 
-            yield $result;
+            return $result;
         };
 
         $generator = new IteratorMapper($filterCallback);
