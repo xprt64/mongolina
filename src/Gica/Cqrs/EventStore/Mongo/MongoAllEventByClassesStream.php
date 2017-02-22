@@ -8,6 +8,7 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\EventStore\ByClassNamesEventStream;
+use Gica\Cqrs\EventStore\EventsCommit;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use MongoDB\Collection;
@@ -158,7 +159,7 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
         $filterCallback = function ($document) {
             $metaData = $this->extractMetaDataFromDocument($document);
 
-            $result = [];
+            $events = [];
 
             foreach ($document['events'] as $eventSubDocument) {
                 if (!$this->isInterestingEvent($eventSubDocument[MongoEventStore::EVENT_CLASS])) {
@@ -167,10 +168,15 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
 
                 $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
 
-                $result[] = new EventWithMetaData($event, $metaData);
+                $events[] = new EventWithMetaData($event, $metaData);
             }
 
-            return $result;
+
+            return new EventsCommit(
+                $this->extractSequenceFromDocument($document),
+                $this->extractVersionFromDocument($document),
+                $events
+            );
         };
 
         $generator = new IteratorMapper($filterCallback);

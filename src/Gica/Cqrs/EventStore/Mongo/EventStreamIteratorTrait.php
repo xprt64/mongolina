@@ -47,4 +47,14 @@ trait EventStreamIteratorTrait
             $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
         );
     }
+
+    private function extractSequenceFromDocument($document)
+    {
+        return $document['sequence'];
+    }
+
+    private function extractVersionFromDocument($document)
+    {
+        return $document['version'];
+    }
 }
