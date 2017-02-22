@@ -9,6 +9,7 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\EventStore\ByClassNamesEventStream;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
+use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
 
@@ -139,4 +140,40 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
         }
         return $filter;
     }
+
+    /**
+     * @return array|\ArrayIterator
+     */
+    public function fetchCommits()
+    {
+        $cursor = $this->getCursor();
+
+        return $this->getIteratorForCommits($cursor);
+    }
+
+    private function getIteratorForCommits($cursor): \Traversable
+    {
+        $filterCallback = function ($document) {
+            $metaData = $this->extractMetaDataFromDocument($document);
+
+            $result = [];
+
+            foreach ($document['events'] as $eventSubDocument) {
+                if (!$this->isInterestingEvent($eventSubDocument[MongoEventStore::EVENT_CLASS])) {
+                    continue;
+                }
+
+                $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
+
+                $result[] = new EventWithMetaData($event, $metaData);
+            }
+
+            yield $result;
+        };
+
+        $generator = new IteratorMapper($filterCallback);
+
+        return $generator($cursor);
+    }
+
 }
