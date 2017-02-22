@@ -7,18 +7,21 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 
 use Gica\Cqrs\Event\EventWithMetaData;
+use Gica\Cqrs\EventStore\ByClassNamesEventStream;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
+use MongoDB\Collection;
+use MongoDB\Driver\Cursor;
 
-class MongoAllEventByClassesStream implements \Gica\Cqrs\EventStore\EventStream
+class MongoAllEventByClassesStream implements ByClassNamesEventStream
 {
-    use \Gica\Cqrs\EventStore\Mongo\EventStreamIteratorTrait;
+    use EventStreamIteratorTrait;
 
     /**
-     * @var \MongoDB\Collection
+     * @var Collection
      */
     private $collection;
     /**
-     * @var \Gica\Cqrs\EventStore\Mongo\EventSerializer
+     * @var EventSerializer
      */
     private $eventSerializer;
     /**
@@ -26,15 +29,37 @@ class MongoAllEventByClassesStream implements \Gica\Cqrs\EventStore\EventStream
      */
     private $eventClassNames;
 
+    /** @var int|null */
+    private $limit = null;
+
+    /** @var int|null */
+    private $skip;
+
     public function __construct(
-        \MongoDB\Collection $collection,
+        Collection $collection,
         array $eventClassNames,
-        \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer
+        EventSerializer $eventSerializer
     )
     {
         $this->collection = $collection;
         $this->eventSerializer = $eventSerializer;
         $this->eventClassNames = $eventClassNames;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function limitCommits(int $limit)
+    {
+        $this->limit = $limit;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function skipCommits(int $numberOfCommitsToBeSkipped)
+    {
+        $this->skip = $numberOfCommitsToBeSkipped;
     }
 
     /**
@@ -47,24 +72,35 @@ class MongoAllEventByClassesStream implements \Gica\Cqrs\EventStore\EventStream
         return $this->getIteratorThatExtractsInterestingEventsFromDocument($cursor);
     }
 
-    private function getCursor():\MongoDB\Driver\Cursor
+    private function getCursor(): Cursor
     {
+        $options = [
+            'sort' => [
+                'sequence' => 1,
+            ],
+        ];
+
+        if ($this->limit > 0) {
+            $options['limit'] = $this->limit;
+        }
+
+        if ($this->skip > 0) {
+            $options['skip'] = $this->skip;
+        }
+
         $cursor = $this->collection->find(
             [
                 MongoEventStore::EVENTS_EVENT_CLASS => [
                     '$in' => $this->eventClassNames,
                 ],
             ],
-            [
-                'sort' => [
-                    'sequence' => 1,
-                ],
-            ]
+            $options
         );
+
         return $cursor;
     }
 
-    private function getIteratorThatExtractsInterestingEventsFromDocument($cursor):\Traversable
+    private function getIteratorThatExtractsInterestingEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
             $metaData = $this->extractMetaDataFromDocument($document);
@@ -89,5 +125,4 @@ class MongoAllEventByClassesStream implements \Gica\Cqrs\EventStore\EventStream
     {
         return in_array($eventClass, $this->eventClassNames);
     }
-
 }

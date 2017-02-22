@@ -7,22 +7,24 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 
 use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\EventStore\EventStream;
+use Gica\Cqrs\EventStore;
+use Gica\Cqrs\EventStore\AggregateEventStream;
+use Gica\Cqrs\EventStore\ByClassNamesEventStream;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
-use Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher;
-use Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher;
 use Gica\Lib\ObjectToArrayConverter;
+use MongoDB\BSON\UTCDateTime;
+use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
 
-class MongoEventStore implements \Gica\Cqrs\EventStore
+class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
     const EVENT_CLASS = 'eventClass';
 
-    /** @var  \MongoDB\Collection */
+    /** @var  Collection */
     protected $collection;
     /**
-     * @var \Gica\Cqrs\EventStore\Mongo\EventSerializer
+     * @var EventSerializer
      */
     private $eventSerializer;
     /**
@@ -31,8 +33,8 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
     private $objectToArrayConverter;
 
     public function __construct(
-        \MongoDB\Collection $collection,
-        \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer,
+        Collection $collection,
+        EventSerializer $eventSerializer,
         ObjectToArrayConverter $objectToArrayConverter
     )
     {
@@ -41,7 +43,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         $this->objectToArrayConverter = $objectToArrayConverter;
     }
 
-    public function loadEventsForAggregate(string $aggregateClass, $aggregateId): \Gica\Cqrs\EventStore\AggregateEventStream
+    public function loadEventsForAggregate(string $aggregateClass, $aggregateId): AggregateEventStream
     {
         return new MongoAggregateAllEventStream(
             $this->collection,
@@ -80,7 +82,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
                 'aggregateClass'      => $aggregateClass,
                 'version'             => 1 + $expectedVersion,
                 'sequence'            => 1 + $expectedSequence,
-                'createdAt'           => new \MongoDB\BSON\UTCDateTime(microtime(true) * 1000),
+                'createdAt'           => new UTCDateTime(microtime(true) * 1000),
                 'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
                 'events'              => $this->packEvents($eventsWithMetaData),
             ]);
@@ -103,7 +105,7 @@ class MongoEventStore implements \Gica\Cqrs\EventStore
         ]);
     }
 
-    public function loadEventsByClassNames(array $eventClasses): EventStream
+    public function loadEventsByClassNames(array $eventClasses): ByClassNamesEventStream
     {
         return new MongoAllEventByClassesStream(
             $this->collection,
