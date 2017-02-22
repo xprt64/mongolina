@@ -37,6 +37,9 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     /** @var int|null */
     private $afterSequence;
 
+    /** @var int|null */
+    private $beforeSequence;
+
     public function __construct(
         Collection $collection,
         array $eventClassNames,
@@ -64,6 +67,14 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
         $this->afterSequence = $afterSequence;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function beforeSequence(int $beforeSequence)
+    {
+        $this->beforeSequence = $beforeSequence;
+    }
+
     public function countCommits(): int
     {
         return $this->collection->count($this->getFilter());
@@ -86,6 +97,10 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
                 'sequence' => 1,
             ],
         ];
+
+        if ($this->beforeSequence !== null) {
+            $options['sort']['sequence'] = -1;
+        }
 
         if ($this->limit > 0) {
             $options['limit'] = $this->limit;
@@ -138,6 +153,12 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
         if ($this->afterSequence !== null) {
             $filter['sequence'] = [
                 '$gt' => $this->afterSequence,
+            ];
+        }
+
+        if ($this->beforeSequence !== null) {
+            $filter['sequence'] = [
+                '$lt' => $this->beforeSequence,
             ];
         }
 
