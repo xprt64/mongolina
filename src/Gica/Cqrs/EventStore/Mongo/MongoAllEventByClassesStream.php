@@ -127,6 +127,6 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
 
     private function isInterestingEvent($eventClass)
     {
-        return in_array($eventClass, $this->eventClassNames);
+        return empty($this->eventClassNames) || in_array($eventClass, $this->eventClassNames);
     }
 }
