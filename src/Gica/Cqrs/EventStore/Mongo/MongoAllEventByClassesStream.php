@@ -34,7 +34,7 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     private $limit = null;
 
     /** @var int|null */
-    private $skip;
+    private $afterSequence;
 
     public function __construct(
         Collection $collection,
@@ -58,12 +58,12 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     /**
      * @inheritdoc
      */
-    public function skipCommits(int $numberOfCommitsToBeSkipped)
+    public function afterSequence(int $afterSequence)
     {
-        $this->skip = $numberOfCommitsToBeSkipped;
+        $this->afterSequence = $afterSequence;
     }
 
-    public function countCommits():int
+    public function countCommits(): int
     {
         return $this->collection->count($this->getFilter());
     }
@@ -88,10 +88,6 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
 
         if ($this->limit > 0) {
             $options['limit'] = $this->limit;
-        }
-
-        if ($this->skip > 0) {
-            $options['skip'] = $this->skip;
         }
 
         $cursor = $this->collection->find(
@@ -136,8 +132,14 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
             $filter[MongoEventStore::EVENTS_EVENT_CLASS] = [
                 '$in' => $this->eventClassNames,
             ];
-            return $filter;
         }
+
+        if ($this->afterSequence !== null) {
+            $filter['sequence'] = [
+                '$gt' => $this->afterSequence,
+            ];
+        }
+
         return $filter;
     }
 
