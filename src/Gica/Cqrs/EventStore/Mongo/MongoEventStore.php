@@ -9,7 +9,7 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\EventStore;
 use Gica\Cqrs\EventStore\AggregateEventStream;
-use Gica\Cqrs\EventStore\ByClassNamesEventStream;
+use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\UTCDateTime;
@@ -105,7 +105,7 @@ class MongoEventStore implements EventStore
         ]);
     }
 
-    public function loadEventsByClassNames(array $eventClasses): ByClassNamesEventStream
+    public function loadEventsByClassNames(array $eventClasses): EventStreamGroupedByCommit
     {
         return new MongoAllEventByClassesStream(
             $this->collection,

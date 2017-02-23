@@ -7,14 +7,14 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 
 use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\EventStore\ByClassNamesEventStream;
 use Gica\Cqrs\EventStore\EventsCommit;
+use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
 
-class MongoAllEventByClassesStream implements ByClassNamesEventStream
+class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 {
     use EventStreamIteratorTrait;
 
@@ -40,6 +40,8 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     /** @var int|null */
     private $beforeSequence;
 
+    private $ascending = true;
+
     public function __construct(
         Collection $collection,
         array $eventClassNames,
@@ -62,17 +64,19 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
     /**
      * @inheritdoc
      */
-    public function afterSequence(int $afterSequence)
+    public function afterSequenceAndAscending(int $afterSequence)
     {
         $this->afterSequence = $afterSequence;
+        $this->ascending = true;
     }
 
     /**
      * @inheritdoc
      */
-    public function beforeSequence(int $beforeSequence)
+    public function beforeSequenceAndDescending(int $beforeSequence)
     {
         $this->beforeSequence = $beforeSequence;
+        $this->ascending = false;
     }
 
     public function countCommits(): int
@@ -92,13 +96,11 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
 
     private function getCursor(): Cursor
     {
-        $options = [
-            'sort' => [
-                'sequence' => 1,
-            ],
-        ];
+        $options = [];
 
-        if ($this->beforeSequence !== null) {
+        if ($this->ascending) {
+            $options['sort']['sequence'] = 1;
+        } else {
             $options['sort']['sequence'] = -1;
         }
 
@@ -204,5 +206,4 @@ class MongoAllEventByClassesStream implements ByClassNamesEventStream
 
         return $generator($cursor);
     }
-
 }
