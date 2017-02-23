@@ -40,6 +40,8 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     /** @var int|null */
     private $beforeSequence;
 
+    private $ascending = true;
+
     public function __construct(
         Collection $collection,
         array $eventClassNames,
@@ -65,6 +67,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     public function afterSequence(int $afterSequence)
     {
         $this->afterSequence = $afterSequence;
+        $this->ascending = true;
     }
 
     /**
@@ -73,6 +76,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     public function beforeSequence(int $beforeSequence)
     {
         $this->beforeSequence = $beforeSequence;
+        $this->ascending = false;
     }
 
     public function countCommits(): int
@@ -85,16 +89,33 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
      */
     public function getIterator()
     {
+        $commits = $this->fetchCommits();
+
+        return new \ArrayIterator($this->extractEventsFromCommits($commits));
+    }
+
+    /**
+     * @return EventsCommit[]
+     */
+    public function fetchCommits()
+    {
         $cursor = $this->getCursor();
 
-        return $this->getIteratorThatExtractsInterestingEventsFromDocument($cursor);
+        /** @var EventsCommit[] $commits */
+        $commits = iterator_to_array($this->getIteratorForCommits($cursor));
+
+        return $this->sortCommits($commits);
     }
 
     private function getCursor(): Cursor
     {
         $options = [];
 
-        $options['sort']['sequence'] = 1;
+        if ($this->ascending) {
+            $options['sort']['sequence'] = 1;
+        } else {
+            $options['sort']['sequence'] = -1;
+        }
 
         if ($this->limit > 0) {
             $options['limit'] = $this->limit;
@@ -108,25 +129,28 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         return $cursor;
     }
 
-    private function getIteratorThatExtractsInterestingEventsFromDocument($cursor): \Traversable
+    /**
+     * @param EventsCommit[] $commits
+     * @return EventWithMetaData[]
+     */
+    private function extractEventsFromCommits($commits)
     {
-        $expanderCallback = function ($document) {
-            $metaData = $this->extractMetaDataFromDocument($document);
-
-            foreach ($document['events'] as $eventSubDocument) {
-                if (!$this->isInterestingEvent($eventSubDocument[MongoEventStore::EVENT_CLASS])) {
+        $expanderCallback = function (EventsCommit $commit) {
+            foreach ($commit->getEventsWithMetadata() as $eventWithMetaData) {
+                if (!$this->isInterestingEvent(get_class($eventWithMetaData->getEvent()))) {
                     continue;
                 }
 
-                $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
-
-                yield new EventWithMetaData($event, $metaData);
+                yield $eventWithMetaData;
             }
         };
 
         $generator = new IteratorExpander($expanderCallback);
 
-        return $generator($cursor);
+        /** @var EventWithMetaData[] $eventsWithMetaData */
+        $eventsWithMetaData = iterator_to_array($generator->__invoke($commits));
+
+        return $eventsWithMetaData;
     }
 
     private function isInterestingEvent($eventClass)
@@ -159,16 +183,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         return $filter;
     }
 
-    /**
-     * @return array|\ArrayIterator
-     */
-    public function fetchCommits()
-    {
-        $cursor = $this->getCursor();
-
-        return $this->getIteratorForCommits($cursor);
-    }
-
     private function getIteratorForCommits($cursor): \Traversable
     {
         $filterCallback = function ($document) {
@@ -197,4 +211,18 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
         return $generator($cursor);
     }
+
+    /**
+     * @param EventsCommit[] $eventCommits
+     * @return EventsCommit[]
+     */
+    private function sortCommits(array $eventCommits)
+    {
+        usort($eventCommits, function (EventsCommit $first, EventsCommit $second) {
+            return $first->getSequence() <=> $second->getSequence();
+        });
+
+        return $eventCommits;
+    }
+
 }
