@@ -40,8 +40,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     /** @var int|null */
     private $beforeSequence;
 
-    private $ascending = true;
-
     public function __construct(
         Collection $collection,
         array $eventClassNames,
@@ -64,19 +62,17 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     /**
      * @inheritdoc
      */
-    public function afterSequenceAndAscending(int $afterSequence)
+    public function afterSequence(int $afterSequence)
     {
         $this->afterSequence = $afterSequence;
-        $this->ascending = true;
     }
 
     /**
      * @inheritdoc
      */
-    public function beforeSequenceAndDescending(int $beforeSequence)
+    public function beforeSequence(int $beforeSequence)
     {
         $this->beforeSequence = $beforeSequence;
-        $this->ascending = false;
     }
 
     public function countCommits(): int
@@ -98,11 +94,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     {
         $options = [];
 
-        if ($this->ascending) {
-            $options['sort']['sequence'] = 1;
-        } else {
-            $options['sort']['sequence'] = -1;
-        }
+        $options['sort']['sequence'] = 1;
 
         if ($this->limit > 0) {
             $options['limit'] = $this->limit;
@@ -193,7 +185,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
                 $events[] = new EventWithMetaData($event, $metaData);
             }
-
 
             return new EventsCommit(
                 $this->extractSequenceFromDocument($document),
