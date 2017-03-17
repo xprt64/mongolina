@@ -6,6 +6,14 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use Gica\Cqrs\Event\EventWithMetaData;
+use Gica\Cqrs\Event\ScheduledEvent;
+use Gica\Cqrs\Scheduling\ScheduledEventWithMetadata;
+use Gica\Iterator\IteratorTransformer\IteratorMapper;
+use Gica\Types\Guid;
+use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\UTCDateTime;
+
 class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
 {
 
@@ -34,24 +42,24 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
     {
         $cursor = $this->collection->find([
             'scheduleAt' => [
-                '$lte' => new \MongoDB\BSON\UTCDateTime(time() * 1000),
+                '$lte' => new UTCDateTime(time() * 1000),
             ],
         ], [
-            'scheduleAt' => '1',
+            'sort' => ['scheduleAt' => 1],
         ]);
 
-        return (new \Gica\Iterator\IteratorTransformer\IteratorMapper(function ($document) {
+        return (new IteratorMapper(function ($document) {
             return $this->extractEventWithData($document);
         }))($cursor);
     }
 
     /**
-     * @param \Gica\Cqrs\Event\EventWithMetaData[] $futureEventsWithMetaData
+     * @param EventWithMetaData[] $futureEventsWithMetaData
      */
     public function scheduleEvents($futureEventsWithMetaData)
     {
         foreach ($futureEventsWithMetaData as $eventWithMetaData) {
-            /** @var $event \Gica\Cqrs\Event\FutureEvent */
+            /** @var $event \Gica\Cqrs\Event\ScheduledEvent */
             $event = $eventWithMetaData->getEvent();
             $this->scheduleEvent($eventWithMetaData, $event->getFireDate());
         }
@@ -59,29 +67,41 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
 
     private function extractEventWithData($document)
     {
-        return new \Gica\Cqrs\FutureEvents\ScheduledEvent(
+        return new ScheduledEventWithMetadata(
             $document['_id'],
             \unserialize($document['eventWithMetaData']));
     }
 
-    private function markEventAsProcessed(\Gica\Cqrs\FutureEvents\ScheduledEvent $scheduledEvent)
+    private function markEventAsProcessed(ScheduledEventWithMetadata $scheduledEvent)
     {
         $this->collection->deleteOne([
-            '_id' => new \MongoDB\BSON\ObjectID($scheduledEvent->getEventId()),
+            '_id' => new ObjectID($scheduledEvent->getEventId()),
         ]);
     }
 
-    public function scheduleEvent(\Gica\Cqrs\Event\EventWithMetaData $eventWithMetaData, \DateTimeImmutable $date)
+    public function scheduleEvent(EventWithMetaData $eventWithMetaData, \DateTimeImmutable $date)
     {
-        $this->collection->insertOne([
-            '_id'               => new \MongoDB\BSON\ObjectID(),
-            'scheduleAt'        => new \MongoDB\BSON\UTCDateTime($date->getTimestamp() * 1000),
+        /** @var ScheduledEvent $event */
+        $event = $eventWithMetaData->getEvent();
+
+        $messageIdToMongoId = $this->messageIdToMongoId($event->getMessageId());
+
+        $this->collection->updateOne([
+            '_id'               => $messageIdToMongoId,
+            'scheduleAt'        => new UTCDateTime($date->getTimestamp() * 1000),
             'eventWithMetaData' => \serialize($eventWithMetaData),
+        ], [
+            '$upsert' => true,
         ]);
     }
 
     public function createStore()
     {
         $this->collection->createIndex(['scheduleAt' => 1, 'version' => 1]);
+    }
+
+    private function messageIdToMongoId($messageId): ObjectID
+    {
+        return new ObjectID(Guid::fromFixedString('scheduled-event-' . $messageId));
     }
 }
