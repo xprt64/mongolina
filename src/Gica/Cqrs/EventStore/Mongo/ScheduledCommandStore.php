@@ -80,6 +80,10 @@ class ScheduledCommandStore implements \Gica\Cqrs\ScheduledCommandStore
 
     private function messageIdToMongoId($messageId): ObjectID
     {
+        if (null === $messageId || '' === $messageId) {
+            return new ObjectID(Guid::generate());
+        }
+
         return new ObjectID(Guid::fromFixedString('scheduled-message-' . $messageId));
     }
 

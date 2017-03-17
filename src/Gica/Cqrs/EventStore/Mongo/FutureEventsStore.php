@@ -102,6 +102,9 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
 
     private function messageIdToMongoId($messageId): ObjectID
     {
+        if (null === $messageId || '' === $messageId) {
+            return new ObjectID(Guid::generate());
+        }
         return new ObjectID(Guid::fromFixedString('scheduled-event-' . $messageId));
     }
 }
