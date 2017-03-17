@@ -4,23 +4,12 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
-use Gica\Cqrs\Scheduling\ScheduledCommand;
-use Gica\Types\Guid;
-use MongoDB\BSON\ObjectID;
+use Gica\Cqrs\EventStore\Mongo\ScheduledCommand\ScheduledCommandStoreTrait;
 use MongoDB\BSON\UTCDateTime;
 
-class ScheduledCommandStore implements \Gica\Cqrs\ScheduledCommandStore
+class ScheduledCommandStore implements \Gica\Cqrs\Scheduling\ScheduledCommandStore
 {
-
-    /* @var \MongoDB\Collection */
-    private $collection;
-
-    public function __construct(
-        \MongoDB\Collection $collection
-    )
-    {
-        $this->collection = $collection;
-    }
+    use ScheduledCommandStoreTrait;
 
     public function loadAndProcessScheduledCommands(callable $eventProcessor/** function(ScheduledCommand $scheduledCommand) */)
     {
@@ -51,58 +40,10 @@ class ScheduledCommandStore implements \Gica\Cqrs\ScheduledCommandStore
         return unserialize($document['command']);
     }
 
-    /**
-     * @param ScheduledCommand[] $scheduledCommands
-     */
-    public function scheduleCommands($scheduledCommands)
-    {
-        foreach ($scheduledCommands as $command) {
-            $this->scheduleCommand($command);
-        }
-    }
-
-    public function scheduleCommand(ScheduledCommand $scheduledCommand)
-    {
-        $messageIdToMongoId = $this->messageIdToMongoId($scheduledCommand->getMessageId());
-
-        $this->collection->updateOne([
-            '_id' => $messageIdToMongoId,
-        ], [
-            '$set' => [
-                '_id'        => $messageIdToMongoId,
-                'scheduleAt' => new UTCDateTime($scheduledCommand->getFireDate()->getTimestamp() * 1000),
-                'command'    => \serialize($scheduledCommand),
-            ],
-        ], [
-            'upsert' => true,
-        ]);
-    }
-
-    private function messageIdToMongoId($messageId): ObjectID
-    {
-        if (null === $messageId || '' === $messageId) {
-            return new ObjectID(Guid::generate());
-        }
-
-        return new ObjectID(Guid::fromFixedString('scheduled-message-' . $messageId));
-    }
-
-    public function createStore()
-    {
-        $this->collection->createIndex(['scheduleAt' => 1, 'version' => 1]);
-    }
-
-    public function dropStore()
-    {
-        $this->collection->drop();
-    }
-
     public function cancelCommand($commandId)
     {
-        $messageIdToMongoId = $this->messageIdToMongoId($commandId);
-
         $this->collection->deleteOne([
-            '_id' => $messageIdToMongoId,
+            '_id' => $this->messageIdToMongoId($commandId),
         ]);
     }
 }
