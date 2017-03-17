@@ -9,19 +9,19 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\Event\ScheduledEvent;
 use Gica\Cqrs\Scheduling\ScheduledEventWithMetadata;
-use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use Gica\Types\Guid;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
+use MongoDB\Collection;
 
 class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
 {
 
-    /* @var \MongoDB\Collection */
+    /* @var Collection */
     private $collection;
 
     public function __construct(
-        \MongoDB\Collection $collection
+        Collection $collection
     )
     {
         $this->collection = $collection;
@@ -29,18 +29,14 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
 
     public function loadAndProcessScheduledEvents(callable $eventProcessor)
     {
-        $scheduledEvents = $this->loadScheduledEvents();
-
-        foreach ($scheduledEvents as $scheduledEvent) {
-            $eventProcessor($scheduledEvent);
-
-            $this->markEventAsProcessed($scheduledEvent);
+        while ($scheduledEvent = $this->loadOneEvent()) {
+            call_user_func($eventProcessor, $scheduledEvent);
         }
     }
 
-    private function loadScheduledEvents()
+    private function loadOneEvent()
     {
-        $cursor = $this->collection->find([
+        $document = $this->collection->findOneAndDelete([
             'scheduleAt' => [
                 '$lte' => new UTCDateTime(time() * 1000),
             ],
@@ -48,9 +44,11 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
             'sort' => ['scheduleAt' => 1],
         ]);
 
-        return (new IteratorMapper(function ($document) {
-            return $this->extractEventWithData($document);
-        }))($cursor);
+        if (!$document) {
+            return null;
+        }
+
+        return $this->extractEventWithData($document);
     }
 
     /**
@@ -59,7 +57,7 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
     public function scheduleEvents($futureEventsWithMetaData)
     {
         foreach ($futureEventsWithMetaData as $eventWithMetaData) {
-            /** @var $event \Gica\Cqrs\Event\ScheduledEvent */
+            /** @var $event ScheduledEvent */
             $event = $eventWithMetaData->getEvent();
             $this->scheduleEvent($eventWithMetaData, $event->getFireDate());
         }
@@ -70,13 +68,6 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
         return new ScheduledEventWithMetadata(
             $document['_id'],
             \unserialize($document['eventWithMetaData']));
-    }
-
-    private function markEventAsProcessed(ScheduledEventWithMetadata $scheduledEvent)
-    {
-        $this->collection->deleteOne([
-            '_id' => new ObjectID($scheduledEvent->getEventId()),
-        ]);
     }
 
     public function scheduleEvent(EventWithMetaData $eventWithMetaData, \DateTimeImmutable $date)
