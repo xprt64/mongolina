@@ -18,11 +18,11 @@ class CommandScheduler implements \Gica\Cqrs\Scheduling\CommandScheduler
     public function scheduleCommands($scheduledCommands)
     {
         foreach ($scheduledCommands as $command) {
-            $this->scheduleCommand($command);
+            $this->scheduleCommand($command, '', '');
         }
     }
 
-    public function scheduleCommand(ScheduledCommand $scheduledCommand)
+    public function scheduleCommand(ScheduledCommand $scheduledCommand, string $aggregateClass, $aggregateId)
     {
         $messageIdToMongoId = $this->messageIdToMongoId($scheduledCommand->getMessageId());
 
@@ -33,6 +33,10 @@ class CommandScheduler implements \Gica\Cqrs\Scheduling\CommandScheduler
                 '_id'        => $messageIdToMongoId,
                 'scheduleAt' => new UTCDateTime($scheduledCommand->getFireDate()->getTimestamp() * 1000),
                 'command'    => \serialize($scheduledCommand),
+                'aggregate'  => [
+                    'id'    => (string)$aggregateId,
+                    'class' => $aggregateClass,
+                ],
             ],
         ], [
             'upsert' => true,
