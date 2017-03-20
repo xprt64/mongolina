@@ -6,6 +6,7 @@
 namespace tests\unit\Gica\Cqrs\EventStore\Mongo;
 
 
+use Gica\Cqrs\EventStore\Mongo\CommandScheduler;
 use Gica\Cqrs\EventStore\Mongo\ScheduledCommandStore;
 use Gica\Cqrs\Scheduling\ScheduledCommand;
 
@@ -22,6 +23,9 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
 
         $collection = $db->selectCollection('scheduledCommandStore');
 
+        $commandScheduler = new CommandScheduler(
+            $collection);
+
         $scheduledCommandStore = new ScheduledCommandStore(
             $collection);
 
@@ -37,7 +41,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         $command->method('getMessageId')
             ->willReturn('1234');
 
-        $scheduledCommandStore->scheduleCommands([$command]);
+        $commandScheduler->scheduleCommands([$command]);
 
         $this->assertCount(1, $collection->find()->toArray());
 
@@ -64,11 +68,12 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
 
         $collection = $db->selectCollection('scheduledCommandStore');
 
-        $scheduledCommandStore = new ScheduledCommandStore(
+
+        $commandScheduler = new CommandScheduler(
             $collection);
 
-        $scheduledCommandStore->dropStore();
-        $scheduledCommandStore->createStore();
+        $commandScheduler->dropStore();
+        $commandScheduler->createStore();
 
         $command = $this->getMockBuilder(ScheduledCommand::class)
             ->getMock();
@@ -79,7 +84,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         $command->method('getMessageId')
             ->willReturn('1234');
 
-        $scheduledCommandStore->scheduleCommands([$command, $command, $command, $command]);
+        $commandScheduler->scheduleCommands([$command, $command, $command, $command]);
 
         $this->assertCount(1, $collection->find()->toArray());
     }

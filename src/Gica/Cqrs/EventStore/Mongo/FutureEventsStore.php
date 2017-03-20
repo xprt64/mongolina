@@ -78,11 +78,12 @@ class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
         $messageIdToMongoId = $this->messageIdToMongoId($event->getMessageId());
 
         $this->collection->updateOne([
-            '_id'               => $messageIdToMongoId,
+            '_id' => $messageIdToMongoId,
+        ], [
             'scheduleAt'        => new UTCDateTime($date->getTimestamp() * 1000),
             'eventWithMetaData' => \serialize($eventWithMetaData),
         ], [
-            '$upsert' => true,
+            'upsert' => true,
         ]);
     }
 
