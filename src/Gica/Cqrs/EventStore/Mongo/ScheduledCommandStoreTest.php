@@ -41,7 +41,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         $command->method('getMessageId')
             ->willReturn('1234');
 
-        $commandScheduler->scheduleCommands([$command]);
+        $commandScheduler->scheduleCommand($command);
 
         $this->assertCount(1, $collection->find()->toArray());
 
