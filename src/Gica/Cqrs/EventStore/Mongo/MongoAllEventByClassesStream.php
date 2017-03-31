@@ -91,7 +91,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     {
         $commits = $this->fetchCommits();
 
-        return new \ArrayIterator($this->extractEventsFromCommits($commits));
+        return $this->extractEventsFromCommits($commits);
     }
 
     /**
@@ -102,9 +102,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         $cursor = $this->getCursor();
 
         /** @var EventsCommit[] $commits */
-        $commits = iterator_to_array($this->getIteratorForCommits($cursor));
-
-        return $this->sortCommits($commits);
+        return $this->getIteratorForCommits($cursor);
     }
 
     private function getCursor(): Cursor
@@ -131,7 +129,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
     /**
      * @param EventsCommit[] $commits
-     * @return EventWithMetaData[]
+     * @return EventWithMetaData[]|\Generator
      */
     private function extractEventsFromCommits($commits)
     {
@@ -147,10 +145,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
         $generator = new IteratorExpander($expanderCallback);
 
-        /** @var EventWithMetaData[] $eventsWithMetaData */
-        $eventsWithMetaData = iterator_to_array($generator->__invoke($commits));
-
-        return $eventsWithMetaData;
+        return $generator->__invoke($commits);
     }
 
     private function isInterestingEvent($eventClass)
@@ -185,7 +180,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
     private function getIteratorForCommits($cursor): \Traversable
     {
-        $filterCallback = function ($document) {
+        return (new IteratorMapper(function ($document) {
             $metaData = $this->extractMetaDataFromDocument($document);
 
             $events = [];
@@ -205,24 +200,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
                 $this->extractVersionFromDocument($document),
                 $events
             );
-        };
-
-        $generator = new IteratorMapper($filterCallback);
-
-        return $generator($cursor);
+        }))($cursor);
     }
-
-    /**
-     * @param EventsCommit[] $eventCommits
-     * @return EventsCommit[]
-     */
-    private function sortCommits(array $eventCommits)
-    {
-        usort($eventCommits, function (EventsCommit $first, EventsCommit $second) {
-            return $first->getSequence() <=> $second->getSequence();
-        });
-
-        return $eventCommits;
-    }
-
 }
