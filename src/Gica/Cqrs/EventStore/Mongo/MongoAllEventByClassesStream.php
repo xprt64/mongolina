@@ -183,21 +183,26 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         return (new IteratorMapper(function ($document) {
             $metaData = $this->extractMetaDataFromDocument($document);
 
+            $sequence = $this->extractSequenceFromDocument($document);
+            $version = $this->extractVersionFromDocument($document);
+
             $events = [];
 
-            foreach ($document['events'] as $eventSubDocument) {
+            foreach ($document['events'] as $index => $eventSubDocument) {
                 if (!$this->isInterestingEvent($eventSubDocument[MongoEventStore::EVENT_CLASS])) {
                     continue;
                 }
 
                 $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
 
-                $events[] = new EventWithMetaData($event, $metaData);
+                $eventWithMetaData = new EventWithMetaData($event, $metaData);
+
+                $events[] = $eventWithMetaData->withSequenceAndIndex($sequence, $index);
             }
 
             return new EventsCommit(
-                $this->extractSequenceFromDocument($document),
-                $this->extractVersionFromDocument($document),
+                $sequence,
+                $version,
                 $events
             );
         }))($cursor);
