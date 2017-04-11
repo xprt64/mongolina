@@ -29,7 +29,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         $this->collection = $collection;
     }
 
-    public function createCollection()
+    public function createStorage()
     {
         $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
         $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
@@ -118,5 +118,10 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ]);
+    }
+
+    public function clearAllStates()
+    {
+        $this->collection->deleteMany([]);
     }
 }
