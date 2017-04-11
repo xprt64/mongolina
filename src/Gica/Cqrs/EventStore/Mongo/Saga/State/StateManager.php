@@ -11,6 +11,9 @@ use Gica\Cqrs\Saga\State\ProcessStateUpdater;
 use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
 
+/**
+ * State manager; uses optimistic locking
+ */
 class StateManager implements ProcessStateUpdater, ProcessStateLoader
 {
 
@@ -28,6 +31,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     public function createCollection()
     {
+        $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
         $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
     }
 
@@ -35,30 +39,6 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
     {
         return $this->loadStateWithVersion($stateClass, $stateId, $version);
     }
-
-    public function updateState($stateId, callable $updater)
-    {
-        $stateClass = $this->getStateClass($updater);
-
-        while (true) {
-            try {
-                $this->tryUpdateState($stateClass, $stateId, $updater);
-                break;
-            } catch (BulkWriteException $bulkWriteException) {
-                continue;
-            }
-        }
-    }
-
-    private function tryUpdateState(string $stateClass, $stateId, callable $updater)
-    {
-        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version);
-
-        $newState = call_user_func($updater, $currentState);
-
-        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version);
-    }
-
 
     private function loadStateWithVersion(string $stateClass, $stateId, &$version)
     {
@@ -82,6 +62,20 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         }
     }
 
+    public function updateState($stateId, callable $updater)
+    {
+        $stateClass = $this->getStateClass($updater);
+
+        while (true) {
+            try {
+                $this->tryUpdateState($stateClass, $stateId, $updater);
+                break;
+            } catch (BulkWriteException $bulkWriteException) {
+                continue;
+            }
+        }
+    }
+
     private function getStateClass(callable $update): string
     {
         $reflection = new \ReflectionFunction($update);
@@ -93,24 +87,36 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         return $reflection->getParameters()[0]->getClass()->name;
     }
 
+    private function tryUpdateState(string $stateClass, $stateId, callable $updater)
+    {
+        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version);
+
+        $newState = call_user_func($updater, $currentState);
+
+        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version);
+    }
+
     private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded)
     {
-        $this->collection->updateOne([
+        $this->collection->insertOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
-        ], [
-            '$set' => [
-                'payload' => serialize($newState),
-                'version' => $versionWhenLoaded + 1,
-            ],
-        ], [
-            'upsert' => true,
+            'payload'    => serialize($newState),
+            'version'    => $versionWhenLoaded + 1,
         ]);
 
         $this->collection->deleteOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
-            'version'    => $versionWhenLoaded,
+            'version'    => ['$lte' => $versionWhenLoaded],
+        ]);
+    }
+
+    public function debugGetVersionCountForState(string $stateClass, $stateId): int
+    {
+        return $this->collection->count([
+            'stateClass' => $stateClass,
+            'stateId'    => (string)$stateId,
         ]);
     }
 }

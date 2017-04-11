@@ -69,6 +69,8 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
         $state = $sut->loadState(\stdClass::class, 123);
 
         $this->assertSame(567, $state->someValue);
+
+        $this->assertSame(1, $sut->debugGetVersionCountForState(\stdClass::class, 123));
     }
 
 }
