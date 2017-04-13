@@ -58,7 +58,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             return unserialize($document['payload']);
         } else {
             $version = 0;
-            return new $stateClass;
+            return null;
         }
     }
 

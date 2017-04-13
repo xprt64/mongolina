@@ -40,9 +40,9 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
     {
         $sut = new StateManager($this->collection);
 
-        $state = $sut->loadState(\stdClass::class, 123);
+        $state = $sut->loadState(MyClass::class, 123);
 
-        $this->assertInstanceOf(\stdClass::class, $state);
+        $this->assertNull($state);
     }
 
     public function test_updateState()
@@ -50,27 +50,35 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
         $sut = new StateManager($this->collection);
 
         //first state update
-        $sut->updateState(123, function(\stdClass $state){
+        $sut->updateState(123, function (?MyClass $state) {
+            if (!$state) {
+                $state = new MyClass();
+            }
             $state->someValue = 345;
             return $state;
         });
 
-        $state = $sut->loadState(\stdClass::class, 123);
+        $state = $sut->loadState(MyClass::class, 123);
 
         $this->assertSame(345, $state->someValue);
 
         //second state update
 
-        $sut->updateState(123, function(\stdClass $state){
+        $sut->updateState(123, function (?MyClass $state) {
             $state->someValue = 567;
             return $state;
         });
 
-        $state = $sut->loadState(\stdClass::class, 123);
+        $state = $sut->loadState(MyClass::class, 123);
 
         $this->assertSame(567, $state->someValue);
 
-        $this->assertSame(1, $sut->debugGetVersionCountForState(\stdClass::class, 123));
+        $this->assertSame(1, $sut->debugGetVersionCountForState(MyClass::class, 123));
     }
+
+}
+
+class MyClass
+{
 
 }
