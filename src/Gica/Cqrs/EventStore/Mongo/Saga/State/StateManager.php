@@ -64,11 +64,9 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     public function updateState($stateId, callable $updater)
     {
-        $stateClass = $this->getStateClass($updater);
-
         while (true) {
             try {
-                $this->tryUpdateState($stateClass, $stateId, $updater);
+                $this->tryUpdateState($stateId, $updater);
                 break;
             } catch (BulkWriteException $bulkWriteException) {
                 continue;
@@ -76,7 +74,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         }
     }
 
-    private function getStateClass(callable $update): string
+    private function getStateClass(callable $update)
     {
         $reflection = new \ReflectionFunction($update);
 
@@ -84,12 +82,22 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             throw new \Exception("Updater callback must have one type-hinted parameter");
         }
 
-        return $reflection->getParameters()[0]->getClass()->name;
+        $parameter = $reflection->getParameters()[0];
+
+        return [$parameter->getClass()->name, $parameter->isOptional()];
     }
 
-    private function tryUpdateState(string $stateClass, $stateId, callable $updater)
+    private function tryUpdateState($stateId, callable $updater)
     {
+        list($stateClass, $isOptional) = $this->getStateClass($updater);
+
         $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version);
+
+        if (0 === $version) {
+            if (!$isOptional) {
+                $currentState = new $stateClass;
+            }
+        }
 
         $newState = call_user_func($updater, $currentState);
 
