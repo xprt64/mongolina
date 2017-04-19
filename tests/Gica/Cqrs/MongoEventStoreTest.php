@@ -1,29 +1,31 @@
 <?php
-/******************************************************************************
- * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
- ******************************************************************************/
+/**
+ * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
+ */
 
-namespace tests\unit\Gica\Cqrs\EventStore\Mongo;
+namespace tests\Gica\Cqrs\EventStore\Mongo\MongoEventStoreTest;
 
-
+require_once __DIR__ . '/MongoTestHelper.php';
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\Event\MetaData;
 use Gica\Cqrs\EventStore\Mongo\EventSerializer;
 use Gica\Cqrs\EventStore\Mongo\MongoEventStore;
 use Gica\Lib\ObjectToArrayConverter;
+use tests\Gica\Cqrs\MongoTestHelper;
 
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 {
+    /** @var \MongoDB\Collection */
+    private $collection;
+
+    protected function setUp()
+    {
+        $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
+    }
 
     public function test_appendEventsForAggregate()
     {
-        $databaseName = 'cqrs';
-
-        $client = new \MongoDB\Client('mongodb://testusername:testpasswd@localhost:27017/' . $databaseName);
-
-        $db = $client->selectDatabase($databaseName);
-
-        $collection = $db->selectCollection('eventStore');
+        $collection = $this->collection;
 
         $eventStore = new MongoEventStore(
             $collection,
@@ -77,13 +79,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
      */
     public function test_appendEventsForAggregateShouldNotWriteTwiceTheSameEvents()
     {
-        $databaseName = 'cqrs';
-
-        $client = new \MongoDB\Client('mongodb://testusername:testpasswd@localhost:27017/' . $databaseName);
-
-        $db = $client->selectDatabase($databaseName);
-
-        $collection = $db->selectCollection('eventStore');
+        $collection = $this->collection;
 
         $eventStore = new MongoEventStore(
             $collection,

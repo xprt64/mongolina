@@ -6,7 +6,9 @@
 namespace tests\Gica\Cqrs\Saga\State;
 
 use Gica\Cqrs\EventStore\Mongo\Saga\State\StateManager;
-use MongoDB\Client;
+use tests\Gica\Cqrs\MongoTestHelper;
+
+require_once __DIR__ . '/../../MongoTestHelper.php';
 
 class StateManagerTest extends \PHPUnit_Framework_TestCase
 {
@@ -15,25 +17,7 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $retries = 0;
-        while (true) {
-            try {
-                $retries++;
-                $this->collection = (new Client('mongodb://db'))
-                    ->selectCollection('test', 'test');
-
-                $this->collection->findOne([]);
-                break;
-            } catch (\Throwable $exception) {
-                //echo $exception->getMessage() . "\n";
-                sleep(1);
-
-                if ($retries > 20) {
-                    die("too many retries, " . $exception->getMessage() . "\n");
-                }
-                continue;
-            }
-        }
+        $this->collection = (new MongoTestHelper())->selectCollection('state');
     }
 
     public function test_loadState()
