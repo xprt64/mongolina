@@ -120,6 +120,6 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
 
     private function factoryDate(): UTCDateTime
     {
-        return new UTCDateTime(microtime(true) * 100);
+        return new UTCDateTime(microtime(true) * 1000);
     }
 }
