@@ -30,8 +30,11 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         $this->database = $database;
     }
 
-    public function createStorage()
+    public function createStorage(string $namespace = 'global_namespace')
     {
+        $collection = $this->getCollection($namespace);
+        $collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
+        $collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
     }
 
     public function loadState(string $stateClass, $stateId, string $namespace = 'global_namespace')
@@ -134,11 +137,6 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function getCollection(string $namespace): Collection
     {
-        $collection = $this->database->selectCollection(preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace));
-
-        $collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
-        $collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
-
-        return $collection;
+        return $this->database->selectCollection(preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace));
     }
 }
