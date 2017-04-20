@@ -9,6 +9,7 @@ namespace Gica\Cqrs\EventStore\Mongo\Saga\State;
 use Gica\Cqrs\Saga\State\ProcessStateLoader;
 use Gica\Cqrs\Saga\State\ProcessStateUpdater;
 use MongoDB\Collection;
+use MongoDB\Database;
 use MongoDB\Driver\Exception\BulkWriteException;
 
 /**
@@ -18,31 +19,29 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 {
 
     /**
-     * @var Collection
+     * @var Database
      */
-    private $collection;
+    private $database;
 
     public function __construct(
-        Collection $collection
+        Database $database
     )
     {
-        $this->collection = $collection;
+        $this->database = $database;
     }
 
     public function createStorage()
     {
-        $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
-        $this->collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
     }
 
-    public function loadState(string $stateClass, $stateId)
+    public function loadState(string $stateClass, $stateId, string $namespace = 'global_namespace')
     {
-        return $this->loadStateWithVersion($stateClass, $stateId, $version);
+        return $this->loadStateWithVersion($stateClass, $stateId, $version, $namespace);
     }
 
-    private function loadStateWithVersion(string $stateClass, $stateId, &$version)
+    private function loadStateWithVersion(string $stateClass, $stateId, &$version, string $namespace)
     {
-        $cursor = $this->collection->find([
+        $cursor = $this->getCollection($namespace)->find([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ], [
@@ -62,11 +61,11 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         }
     }
 
-    public function updateState($stateId, callable $updater)
+    public function updateState($stateId, callable $updater, string $namespace = 'global_namespace')
     {
         while (true) {
             try {
-                $this->tryUpdateState($stateId, $updater);
+                $this->tryUpdateState($stateId, $updater, $namespace);
                 break;
             } catch (BulkWriteException $bulkWriteException) {
                 continue;
@@ -87,11 +86,11 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         return [$parameter->getClass()->name, $parameter->isOptional()];
     }
 
-    private function tryUpdateState($stateId, callable $updater)
+    private function tryUpdateState($stateId, callable $updater, string $namespace)
     {
         list($stateClass, $isOptional) = $this->getStateClass($updater);
 
-        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version);
+        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $namespace);
 
         if (0 === $version) {
             if (!$isOptional) {
@@ -101,35 +100,45 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
         $newState = call_user_func($updater, $currentState);
 
-        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version);
+        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $namespace);
     }
 
-    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded)
+    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded, string $namespace)
     {
-        $this->collection->insertOne([
+        $this->getCollection($namespace)->insertOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
             'payload'    => serialize($newState),
             'version'    => $versionWhenLoaded + 1,
         ]);
 
-        $this->collection->deleteOne([
+        $this->getCollection($namespace)->deleteOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
             'version'    => ['$lte' => $versionWhenLoaded],
         ]);
     }
 
-    public function debugGetVersionCountForState(string $stateClass, $stateId): int
+    public function debugGetVersionCountForState(string $stateClass, $stateId, string $namespace = 'global_namespace'): int
     {
-        return $this->collection->count([
+        return $this->getCollection($namespace)->count([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ]);
     }
 
-    public function clearAllStates()
+    public function clearAllStates(string $namespace = 'global_namespace')
     {
-        $this->collection->deleteMany([]);
+        $this->getCollection($namespace)->deleteMany([]);
+    }
+
+    private function getCollection(string $namespace): Collection
+    {
+        $collection = $this->database->selectCollection(preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace));
+
+        $collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
+        $collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
+
+        return $collection;
     }
 }

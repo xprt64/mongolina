@@ -12,17 +12,21 @@ require_once __DIR__ . '/../../MongoTestHelper.php';
 
 class StateManagerTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var \MongoDB\Collection */
-    private $collection;
+    /** @var \MongoDB\Database */
+    private $database;
 
     protected function setUp()
     {
-        $this->collection = (new MongoTestHelper())->selectCollection('state');
+        $this->database = (new MongoTestHelper())->getDatabase();
+
+        foreach ($this->database->listCollections() as $collection) {
+            $this->database->dropCollection($collection->getName());
+        }
     }
 
     public function test_loadState()
     {
-        $sut = new StateManager($this->collection);
+        $sut = new StateManager($this->database);
 
         $state = $sut->loadState(MyClass::class, 123);
 
@@ -31,7 +35,7 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
 
     public function test_updateState()
     {
-        $sut = new StateManager($this->collection);
+        $sut = new StateManager($this->database);
 
         //first state update
         $sut->updateState(123, function (?MyClass $state) {
