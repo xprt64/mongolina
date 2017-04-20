@@ -77,6 +77,14 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
         ]);
     }
 
+    public function clearProcessingEventBySaga(string $sagaId, string $eventId)
+    {
+        $this->collection->deleteOne([
+            'sagaId'  => $sagaId,
+            'eventId' => $eventId,
+        ]);
+    }
+
     private function factoryId(): ObjectID
     {
         return new ObjectID();

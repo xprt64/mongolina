@@ -71,4 +71,17 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
         $this->sut->startProcessingEventBySaga('someId', "1");
         $this->sut->startProcessingEventBySaga('someId', "1");
     }
+
+    public function test_clearProcessingEventBySaga()
+    {
+        $eventId = "1";
+
+        $this->sut->startProcessingEventBySaga('someId', $eventId);
+        $this->sut->clearProcessingEventBySaga('someId', $eventId);
+
+        $this->assertSame(false, $this->sut->isEventProcessingAlreadyEnded(
+            'someId',
+            $eventId
+        ));
+    }
 }
