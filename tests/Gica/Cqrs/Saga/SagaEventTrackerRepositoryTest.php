@@ -14,23 +14,15 @@ require_once __DIR__ . '/../MongoTestHelper.php';
 
 class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var \MongoDB\Collection */
-    private $collectionStart;
-
-    /** @var \MongoDB\Collection */
-    private $collectionEnd;
-
     /** @var SagaEventTrackerRepository */
     private $sut;
 
     protected function setUp()
     {
-        $this->collectionStart = (new MongoTestHelper())->selectCollection('start');
-        $this->collectionEnd = (new MongoTestHelper())->selectCollection('end');
+        $collectionStart = (new MongoTestHelper())->selectCollection('start');
 
         $this->sut = new SagaEventTrackerRepository(
-            $this->collectionStart,
-            $this->collectionEnd
+            $collectionStart
         );
 
         $this->sut->createStorage();
@@ -38,57 +30,37 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
 
     public function test_startProcessingEventBySaga()
     {
+        $eventId = "1";
+
         $this->assertSame(false, $this->sut->isEventProcessingAlreadyStarted(
             'someId',
-            new EventOrder(1, 2)
+            $eventId
         ));
 
-        $this->assertNull($this->sut->getLastStartedEventSequenceAndIndex(
-            'someId'
-        ));
-
-        $this->sut->startProcessingEventBySaga('someId', new EventOrder(1, 2));
+        $this->sut->startProcessingEventBySaga('someId', $eventId);
 
         $this->assertSame(true, $this->sut->isEventProcessingAlreadyStarted(
             'someId',
-            new EventOrder(1, 2)
+            $eventId
         ));
-
-        $last = $this->sut->getLastStartedEventSequenceAndIndex('someId');
-
-        $this->assertInstanceOf(EventOrder::class, $last);
-
-        $this->assertSame(1, $last->getSequence());
-        $this->assertSame(2, $last->getIndex());
-
-
-        // process another
-        $this->sut->startProcessingEventBySaga('someId', new EventOrder(2, 3));
-
-        $last = $this->sut->getLastStartedEventSequenceAndIndex('someId');
-
-        $this->assertInstanceOf(EventOrder::class, $last);
-
-        $this->assertSame(2, $last->getSequence());
-        $this->assertSame(3, $last->getIndex());
     }
 
     public function test_endProcessingEventBySaga()
     {
+        $eventId = "1";
+
+        $this->sut->startProcessingEventBySaga('someId', $eventId);
+
         $this->assertSame(false, $this->sut->isEventProcessingAlreadyEnded(
             'someId',
-            new EventOrder(1, 2)
+            $eventId
         ));
 
-        $this->assertNull($this->sut->getLastStartedEventSequenceAndIndex(
-            'someId'
-        ));
-
-        $this->sut->endProcessingEventBySaga('someId', new EventOrder(1, 2));
+        $this->sut->endProcessingEventBySaga('someId', $eventId);
 
         $this->assertSame(true, $this->sut->isEventProcessingAlreadyEnded(
             'someId',
-            new EventOrder(1, 2)
+            $eventId
         ));
     }
 
@@ -96,7 +68,7 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->expectException(ConcurentEventProcessingException::class);
 
-        $this->sut->startProcessingEventBySaga('someId', new EventOrder(1, 2));
-        $this->sut->startProcessingEventBySaga('someId', new EventOrder(1, 2));
+        $this->sut->startProcessingEventBySaga('someId', "1");
+        $this->sut->startProcessingEventBySaga('someId', "1");
     }
 }

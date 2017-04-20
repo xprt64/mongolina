@@ -102,6 +102,7 @@ class MongoEventStore implements EventStore
             self::EVENT_CLASS => get_class($eventWithMetaData->getEvent()),
             'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
+            'id'              => $eventWithMetaData->getMetaData()->getEventId(),
         ]);
     }
 

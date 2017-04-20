@@ -6,7 +6,6 @@
 namespace Gica\Cqrs\EventStore\Mongo\Saga;
 
 
-use Gica\Cqrs\Saga\EventOrder;
 use Gica\Cqrs\Saga\SagaEventTrackerRepository\ConcurentEventProcessingException;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
@@ -19,98 +18,63 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
     /**
      * @var Collection
      */
-    private $collectionForStarted;
-    /**
-     * @var Collection
-     */
-    private $collectionForEnded;
+    private $collection;
 
     public function __construct(
-        Collection $collectionForStarted,
-        Collection $collectionForEnded
+        Collection $collection
     )
     {
-        $this->collectionForStarted = $collectionForStarted;
-        $this->collectionForEnded = $collectionForEnded;
+        $this->collection = $collection;
     }
 
     public function createStorage()
     {
-        $this->collectionForStarted->createIndex(['sagaId' => 1, 'sequence' => -1, 'index' => -1], ['unique' => true]);
-        $this->collectionForEnded->createIndex(['sagaId' => 1, 'sequence' => -1, 'index' => -1], ['unique' => true]);
+        $this->collection->createIndex(['sagaId' => 1, 'eventId' => 1,], ['unique' => true]);
     }
 
-    public function isEventProcessingAlreadyStarted(string $sagaId, EventOrder $eventOrder): bool
+    public function isEventProcessingAlreadyStarted(string $sagaId, string $eventId): bool
     {
-        return null !== $this->collectionForStarted->findOne([
-                'sagaId'   => $sagaId,
-                'sequence' => $eventOrder->getSequence(),
-                'index'    => $eventOrder->getIndex(),
+        return null !== $this->collection->findOne([
+                'sagaId'  => $sagaId,
+                'eventId' => $eventId,
             ]);
     }
 
-    public function isEventProcessingAlreadyEnded(string $sagaId, EventOrder $eventOrder): bool
+    public function isEventProcessingAlreadyEnded(string $sagaId, string $eventId): bool
     {
-        return null !== $this->collectionForEnded->findOne([
-                'sagaId'   => $sagaId,
-                'sequence' => $eventOrder->getSequence(),
-                'index'    => $eventOrder->getIndex(),
+        return null !== $this->collection->findOne([
+                'sagaId'  => $sagaId,
+                'eventId' => $eventId,
+                'ended'   => true,
             ]);
     }
 
-    public function startProcessingEventBySaga(string $sagaId, EventOrder $eventOrder)
+    public function startProcessingEventBySaga(string $sagaId, string $eventId)
     {
         try {
-            $this->collectionForStarted->insertOne([
-                '_id'      => $this->factoryId(),
-                'date'     => $this->factoryDate(),
-                'sagaId'   => $sagaId,
-                'sequence' => $eventOrder->getSequence(),
-                'index'    => $eventOrder->getIndex(),
+            $this->collection->insertOne([
+                '_id'     => $this->factoryId(),
+                'date'    => $this->factoryDate(),
+                'sagaId'  => $sagaId,
+                'eventId' => $eventId,
+                'ended'   => false,
             ]);
         } catch (BulkWriteException $bulkWriteException) {
             throw new ConcurentEventProcessingException($bulkWriteException->getMessage());
         }
     }
 
-    public function endProcessingEventBySaga(string $sagaId, EventOrder $eventOrder)
+    public function endProcessingEventBySaga(string $sagaId, string $eventId)
     {
-        try {
-            $this->collectionForEnded->insertOne([
-                '_id'      => $this->factoryId(),
-                'date'     => $this->factoryDate(),
-                'sagaId'   => $sagaId,
-                'sequence' => $eventOrder->getSequence(),
-                'index'    => $eventOrder->getIndex(),
-            ]);
-        } catch (BulkWriteException $bulkWriteException) {
-            throw new ConcurentEventProcessingException($bulkWriteException->getMessage());
-        }
-    }
-
-    public function getLastStartedEventSequenceAndIndex(string $sagaId):?EventOrder
-    {
-        $cursor = $this->collectionForStarted->find([
-            'sagaId' => $sagaId,
+        $this->collection->updateOne([
+            'sagaId'  => $sagaId,
+            'eventId' => $eventId,
         ], [
-            'projection' => [
-                'sequence' => 1,
-                'index'    => 1,
+            '$set' => [
+                'dateEnded' => $this->factoryDate(),
+                'ended'     => true,
             ],
-            'sort'       => [
-                'sequence' => -1,
-                'index'    => -1,
-            ],
-            'limit'      => 1,
         ]);
-
-        $documents = iterator_to_array($cursor);
-
-        if ($documents) {
-            return new EventOrder((int)$documents[0]['sequence'], (int)$documents[0]['index']);
-        }
-
-        return null;
     }
 
     private function factoryId(): ObjectID

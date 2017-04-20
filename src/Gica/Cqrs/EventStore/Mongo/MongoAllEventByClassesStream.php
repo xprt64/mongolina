@@ -195,7 +195,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
                 $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
 
-                $eventWithMetaData = new EventWithMetaData($event, $metaData);
+                $eventWithMetaData = new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
 
                 $events[] = $eventWithMetaData->withSequenceAndIndex($sequence, $index);
             }

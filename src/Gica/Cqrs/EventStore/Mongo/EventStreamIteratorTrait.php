@@ -8,7 +8,6 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\Event\MetaData;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
-use Gica\Types\Guid;
 use MongoDB\BSON\UTCDateTime;
 
 /**
@@ -16,7 +15,7 @@ use MongoDB\BSON\UTCDateTime;
  */
 trait EventStreamIteratorTrait
 {
-    private function getIteratorThatExtractsEventsFromDocument($cursor):\Traversable
+    private function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
             $metaData = $this->extractMetaDataFromDocument($document);
@@ -24,7 +23,7 @@ trait EventStreamIteratorTrait
             foreach ($document['events'] as $eventSubDocument) {
                 $event = $this->eventSerializer->deserializeEvent($eventSubDocument['eventClass'], $eventSubDocument['payload']);
 
-                yield new EventWithMetaData($event, $metaData);
+                yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
             }
 
         };
@@ -43,6 +42,7 @@ trait EventStreamIteratorTrait
         return new MetaData(
             (string)$document['aggregateId'],
             $document['aggregateClass'],
+            null,
             $dateCreated,
             $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
         );

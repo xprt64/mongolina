@@ -11,6 +11,7 @@ use Gica\Cqrs\Event\MetaData;
 use Gica\Cqrs\EventStore\Mongo\EventSerializer;
 use Gica\Cqrs\EventStore\Mongo\MongoEventStore;
 use Gica\Lib\ObjectToArrayConverter;
+use Gica\Types\Guid;
 use tests\Gica\Cqrs\MongoTestHelper;
 
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
@@ -68,6 +69,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
             new MetaData(
                 $aggregateId,
                 $aggregateClass,
+                Guid::generate(),
                 new \DateTimeImmutable(),
                 null
             )
