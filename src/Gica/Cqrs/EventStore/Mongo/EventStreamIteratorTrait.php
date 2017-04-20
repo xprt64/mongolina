@@ -42,7 +42,6 @@ trait EventStreamIteratorTrait
         return new MetaData(
             (string)$document['aggregateId'],
             $document['aggregateClass'],
-            null,
             $dateCreated,
             $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
         );

@@ -66,13 +66,12 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
     {
         return new EventWithMetaData(
             $event,
-            new MetaData(
+            (new MetaData(
                 $aggregateId,
                 $aggregateClass,
-                Guid::generate(),
                 new \DateTimeImmutable(),
                 null
-            )
+            ))->withEventId(Guid::generate())
         );
     }
 
