@@ -119,6 +119,8 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
             $options['limit'] = $this->limit;
         }
 
+        $options['noCursorTimeout'] = true;
+
         $cursor = $this->collection->find(
             $this->getFilter(),
             $options

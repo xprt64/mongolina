@@ -137,6 +137,11 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function getCollection(string $namespace): Collection
     {
-        return $this->database->selectCollection(preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace));
+        return $this->database->selectCollection($this->factoryCollectionName($namespace));
+    }
+
+    private function factoryCollectionName(string $namespace): string
+    {
+        return preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace);
     }
 }
