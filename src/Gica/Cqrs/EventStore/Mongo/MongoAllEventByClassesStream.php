@@ -137,10 +137,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     {
         $expanderCallback = function (EventsCommit $commit) {
             foreach ($commit->getEventsWithMetadata() as $eventWithMetaData) {
-                if (!$this->isInterestingEvent(get_class($eventWithMetaData->getEvent()))) {
-                    continue;
-                }
-
                 yield $eventWithMetaData;
             }
         };
@@ -191,10 +187,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
             $events = [];
 
             foreach ($document['events'] as $index => $eventSubDocument) {
-                if (!$this->isInterestingEvent($eventSubDocument[MongoEventStore::EVENT_CLASS])) {
-                    continue;
-                }
-
                 $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
 
                 $eventWithMetaData = new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));

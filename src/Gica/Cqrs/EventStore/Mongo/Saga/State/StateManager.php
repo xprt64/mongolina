@@ -142,6 +142,6 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function factoryCollectionName(string $namespace): string
     {
-        return preg_replace('#[^a-zA-Z0-9_]#ims', '_', $namespace);
+        return 'private_state_' . md5($namespace);
     }
 }
