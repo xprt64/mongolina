@@ -12,6 +12,7 @@ use Gica\Cqrs\EventStore\AggregateEventStream;
 use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
 use Gica\Lib\ObjectToArrayConverter;
+use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
@@ -54,12 +55,9 @@ class MongoEventStore implements EventStore
 
     public function createStore()
     {
-        $this->collection->createIndex(['aggregateId' => 1, 'aggregateClass' => 1, 'version' => 1], ['unique' => true]);
-        $this->collection->createIndex(['aggregateId' => 1, 'aggregateClass' => 1, 'version' => -1]);
-        $this->collection->createIndex(['aggregateId' => 1, 'aggregateClass' => 1, 'version' => 1, 'sequence' => 1]);
+        $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, 'sequence' => 1]);
-        $this->collection->createIndex(['sequence' => -1], ['unique' => true]);
-        $this->collection->createIndex(['sequence' => 1], ['unique' => true]);
+        $this->collection->createIndex(['sequence' => 1]);
     }
 
     public function dropStore()
@@ -78,6 +76,7 @@ class MongoEventStore implements EventStore
         try {
             $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
             $this->collection->insertOne([
+                'streamName'          => new ObjectID($this->factoryStreamName($aggregateClass, $aggregateId)),
                 'aggregateId'         => (string)$aggregateId,
                 'aggregateClass'      => $aggregateClass,
                 'version'             => 1 + $expectedVersion,
@@ -122,6 +121,11 @@ class MongoEventStore implements EventStore
     public function fetchLatestSequence(): int
     {
         return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
+    }
+
+    private function factoryStreamName(string $aggregateClass, $aggregateId)
+    {
+        return substr(hash('sha256', $aggregateClass . $aggregateId), 0, 24);
     }
 
 }
