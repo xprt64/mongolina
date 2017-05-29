@@ -6,6 +6,8 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use MongoDB\BSON\ObjectID;
+
 class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEventStream
 {
     use \Gica\Cqrs\EventStore\Mongo\EventStreamIteratorTrait;
@@ -53,29 +55,29 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
         return $this->getIteratorThatExtractsEventsFromDocument($cursor);
     }
 
-    public function getVersion():int
+    public function getVersion(): int
     {
         return $this->version;
     }
 
-    private function fetchLatestVersion(string $aggregateClass, $aggregateId):int
+    private function fetchLatestVersion(string $aggregateClass, $aggregateId): int
     {
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
 
-    private function fetchLatestSequence():int
+    private function fetchLatestSequence(): int
     {
         return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
-    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId):\MongoDB\Driver\Cursor
+    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId): \MongoDB\Driver\Cursor
     {
         $cursor = $this->collection->find(
             [
 //                'aggregateId'    => (string)$aggregateId,
 //                'aggregateClass' => $aggregateClass,
-                'streamName' => StreamName::factoryStreamName($aggregateClass, $aggregateId),
-                'version'        => [
+                'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
+                'version'    => [
                     '$lte' => $this->version,
                 ],
             ],

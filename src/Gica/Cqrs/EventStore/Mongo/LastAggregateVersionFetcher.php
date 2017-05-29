@@ -6,6 +6,8 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use MongoDB\BSON\ObjectID;
+
 class LastAggregateVersionFetcher
 {
     public function fetchLatestVersion(\MongoDB\Collection $collection, string $aggregateClass, $aggregateId):int
@@ -14,7 +16,7 @@ class LastAggregateVersionFetcher
             [
 //                'aggregateId' => (string)$aggregateId,
 //                'aggregateClass' => $aggregateClass,
-                'streamName' => StreamName::factoryStreamName($aggregateClass, $aggregateId),
+                'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
             ],
             [
                 'sort'  => [
