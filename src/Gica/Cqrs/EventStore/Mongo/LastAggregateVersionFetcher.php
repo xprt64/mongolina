@@ -12,8 +12,9 @@ class LastAggregateVersionFetcher
     {
         $cursor = $collection->find(
             [
-                'aggregateId' => (string)$aggregateId,
-                'aggregateClass' => $aggregateClass,
+//                'aggregateId' => (string)$aggregateId,
+//                'aggregateClass' => $aggregateClass,
+                'streamName' => StreamName::factoryStreamName($aggregateClass, $aggregateId),
             ],
             [
                 'sort'  => [

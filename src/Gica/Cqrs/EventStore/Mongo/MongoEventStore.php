@@ -11,6 +11,7 @@ use Gica\Cqrs\EventStore;
 use Gica\Cqrs\EventStore\AggregateEventStream;
 use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
+use Gica\Cqrs\EventStore\Mongo\StreamName;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
@@ -123,9 +124,9 @@ class MongoEventStore implements EventStore
         return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
-    private function factoryStreamName(string $aggregateClass, $aggregateId)
+    public function factoryStreamName(string $aggregateClass, $aggregateId)
     {
-        return substr(hash('sha256', $aggregateClass . $aggregateId), 0, 24);
+        return StreamName::factoryStreamName($aggregateClass, $aggregateId);
     }
 
 }

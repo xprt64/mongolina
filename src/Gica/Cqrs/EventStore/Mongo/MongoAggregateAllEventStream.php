@@ -72,8 +72,9 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
     {
         $cursor = $this->collection->find(
             [
-                'aggregateId'    => (string)$aggregateId,
-                'aggregateClass' => $aggregateClass,
+//                'aggregateId'    => (string)$aggregateId,
+//                'aggregateClass' => $aggregateClass,
+                'streamName' => StreamName::factoryStreamName($aggregateClass, $aggregateId),
                 'version'        => [
                     '$lte' => $this->version,
                 ],
