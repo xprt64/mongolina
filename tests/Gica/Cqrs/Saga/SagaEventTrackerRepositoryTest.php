@@ -5,9 +5,8 @@
 
 namespace tests\Gica\Cqrs\Saga\SagaEventTrackerRepositoryTest;
 
+use Gica\Cqrs\EventProcessing\ConcurentEventProcessingException;
 use Gica\Cqrs\EventStore\Mongo\Saga\SagaEventTrackerRepository;
-use Gica\Cqrs\Saga\EventOrder;
-use Gica\Cqrs\Saga\SagaEventTrackerRepository\ConcurentEventProcessingException;
 use tests\Gica\Cqrs\MongoTestHelper;
 
 require_once __DIR__ . '/../MongoTestHelper.php';
@@ -28,7 +27,7 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
         $this->sut->createStorage();
     }
 
-    public function test_startProcessingEventBySaga()
+    public function test_startProcessingEvent()
     {
         $eventId = "1";
 
@@ -37,7 +36,7 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
             $eventId
         ));
 
-        $this->sut->startProcessingEventBySaga('someId', $eventId);
+        $this->sut->startProcessingEvent('someId', $eventId);
 
         $this->assertSame(true, $this->sut->isEventProcessingAlreadyStarted(
             'someId',
@@ -45,18 +44,18 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
         ));
     }
 
-    public function test_endProcessingEventBySaga()
+    public function test_endProcessingEvent()
     {
         $eventId = "1";
 
-        $this->sut->startProcessingEventBySaga('someId', $eventId);
+        $this->sut->startProcessingEvent('someId', $eventId);
 
         $this->assertSame(false, $this->sut->isEventProcessingAlreadyEnded(
             'someId',
             $eventId
         ));
 
-        $this->sut->endProcessingEventBySaga('someId', $eventId);
+        $this->sut->endProcessingEvent('someId', $eventId);
 
         $this->assertSame(true, $this->sut->isEventProcessingAlreadyEnded(
             'someId',
@@ -64,24 +63,45 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
         ));
     }
 
-    public function test_startProcessingEventBySaga_ConcurentEventProcessingException()
+    public function test_startProcessingEvent_ConcurentEventProcessingException()
     {
         $this->expectException(ConcurentEventProcessingException::class);
 
-        $this->sut->startProcessingEventBySaga('someId', "1");
-        $this->sut->startProcessingEventBySaga('someId', "1");
+        $this->sut->startProcessingEvent('someId', "1");
+        $this->sut->startProcessingEvent('someId', "1");
     }
 
-    public function test_clearProcessingEventBySaga()
+    public function test_clearProcessingEvent()
     {
         $eventId = "1";
 
-        $this->sut->startProcessingEventBySaga('someId', $eventId);
-        $this->sut->clearProcessingEventBySaga('someId', $eventId);
+        $this->sut->startProcessingEvent('someId', $eventId);
+        $this->sut->clearProcessingEvent('someId', $eventId);
 
         $this->assertSame(false, $this->sut->isEventProcessingAlreadyEnded(
             'someId',
             $eventId
         ));
+    }
+
+    public function test_getAllInProgressProcessingEvents()
+    {
+        $this->assertCount(0, $this->sut->getAllInProgressProcessingEvents('someId'));
+
+        $this->sut->startProcessingEvent('someId', "1");
+        $this->assertCount(1, $this->sut->getAllInProgressProcessingEvents('someId'));
+
+        $this->sut->startProcessingEvent('someId', "2");
+        $this->assertCount(2, $this->sut->getAllInProgressProcessingEvents('someId'));
+
+        $this->sut->endProcessingEvent('someId', "2");
+        $this->assertCount(1, $this->sut->getAllInProgressProcessingEvents('someId'));
+
+        /** @var \Gica\Cqrs\EventProcessing\InProgressProcessingEvent[]  $events */
+        $events = iterator_to_array($this->sut->getAllInProgressProcessingEvents('someId'), false);
+
+        $event = reset($events);
+
+        $this->assertSame("1", $event->getEventId());
     }
 }

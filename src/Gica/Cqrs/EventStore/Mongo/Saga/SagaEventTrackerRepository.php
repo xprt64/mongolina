@@ -6,7 +6,12 @@
 namespace Gica\Cqrs\EventStore\Mongo\Saga;
 
 
-use Gica\Cqrs\Saga\SagaEventTrackerRepository\ConcurentEventProcessingException;
+use Gica\Cqrs\EventProcessing\ConcurentEventProcessingException;
+use Gica\Cqrs\EventProcessing\InProgressProcessingEvent;
+use Gica\Cqrs\EventStore\Mongo\EventProcessing\MongoInProgressProcessingEvent;
+use Gica\Iterator\IteratorTransformer\IteratorMapper;
+use Gica\MongoDB\Selector\Filter\Comparison\EqualDirect;
+use Gica\MongoDB\Selector\Selector;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
@@ -49,7 +54,7 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
             ]);
     }
 
-    public function startProcessingEventBySaga(string $sagaId, string $eventId)
+    public function startProcessingEvent(string $sagaId, string $eventId)
     {
         try {
             $this->collection->insertOne([
@@ -64,7 +69,7 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
         }
     }
 
-    public function endProcessingEventBySaga(string $sagaId, string $eventId)
+    public function endProcessingEvent(string $sagaId, string $eventId)
     {
         $this->collection->updateOne([
             'sagaId'  => $sagaId,
@@ -77,7 +82,7 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
         ]);
     }
 
-    public function clearProcessingEventBySaga(string $sagaId, string $eventId)
+    public function clearProcessingEvent(string $sagaId, string $eventId)
     {
         $this->collection->deleteOne([
             'sagaId'  => $sagaId,
@@ -93,5 +98,25 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
     private function factoryDate(): UTCDateTime
     {
         return new UTCDateTime(microtime(true) * 1000);
+    }
+
+    /**
+     * @param string $processId
+     * @return InProgressProcessingEvent[]|\Countable|\Iterator
+     */
+    public function getAllInProgressProcessingEvents(string $processId)
+    {
+        return (new Selector($this->collection))
+            ->setIteratorMapper(new IteratorMapper(function ($document) {
+                /** @var UTCDateTime $date */
+                $date = $document['date'];
+
+                return new MongoInProgressProcessingEvent(
+                    \DateTimeImmutable::createFromMutable($date->toDateTime()),
+                    $document['eventId']
+                );
+            }))
+            ->sort('date', true)
+            ->addFilter(new EqualDirect('ended', false));
     }
 }

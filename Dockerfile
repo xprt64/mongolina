@@ -23,4 +23,6 @@ RUN docker-php-ext-install -j$(nproc) zip
 
 RUN pecl install mongodb && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/20-mongodb.ini
 
+COPY ./ /app/
+
 CMD php /app/vendor/bin/phpunit --bootstrap  /app/vendor/autoload.php /app/tests/Gica/Cqrs
