@@ -117,6 +117,7 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
                 );
             }))
             ->sort('date', true)
-            ->addFilter(new EqualDirect('ended', false));
+            ->addFilter(new EqualDirect('ended', false))
+            ->addFilter(new EqualDirect('sagaId', $processId));
     }
 }
