@@ -15,6 +15,8 @@ use MongoDB\BSON\UTCDateTime;
  */
 trait EventStreamIteratorTrait
 {
+    use \Gica\Cqrs\EventStore\Mongo\DocumentParserTrait;
+
     private function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
@@ -39,29 +41,5 @@ trait EventStreamIteratorTrait
         $generator = new IteratorExpander($expanderCallback);
 
         return $generator($cursor);
-    }
-
-    private function extractMetaDataFromDocument($document)
-    {
-        /** @var UTCDateTime $createdAt */
-        $createdAt = $document['createdAt'];
-        $dateCreated = \DateTimeImmutable::createFromMutable($createdAt->toDateTime());
-
-        return new MetaData(
-            (string)$document['aggregateId'],
-            $document['aggregateClass'],
-            $dateCreated,
-            $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
-        );
-    }
-
-    private function extractSequenceFromDocument($document)
-    {
-        return $document['sequence'];
-    }
-
-    private function extractVersionFromDocument($document)
-    {
-        return $document['version'];
     }
 }

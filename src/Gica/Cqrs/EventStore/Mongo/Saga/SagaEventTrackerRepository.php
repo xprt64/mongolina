@@ -35,6 +35,7 @@ class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepo
     public function createStorage()
     {
         $this->collection->createIndex(['sagaId' => 1, 'eventId' => 1,], ['unique' => true]);
+        $this->collection->createIndex(['sagaId' => 1, 'ended' => 1,]);
     }
 
     public function isEventProcessingAlreadyStarted(string $sagaId, string $eventId): bool

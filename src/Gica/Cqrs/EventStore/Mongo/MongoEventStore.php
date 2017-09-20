@@ -9,9 +9,10 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\EventStore;
 use Gica\Cqrs\EventStore\AggregateEventStream;
+use Gica\Cqrs\EventStore\EventsCommit;
 use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
-use Gica\Cqrs\EventStore\Mongo\StreamName;
+use Gica\Cqrs\EventStore\Mongo\EventFromCommitExtractor;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
@@ -33,16 +34,22 @@ class MongoEventStore implements EventStore
      * @var ObjectToArrayConverter
      */
     private $objectToArrayConverter;
+    /**
+     * @var EventFromCommitExtractor
+     */
+    private $eventFromCommitExtractor;
 
     public function __construct(
         Collection $collection,
         EventSerializer $eventSerializer,
-        ObjectToArrayConverter $objectToArrayConverter
+        ObjectToArrayConverter $objectToArrayConverter,
+        EventFromCommitExtractor $eventFromCommitExtractor
     )
     {
         $this->collection = $collection;
         $this->eventSerializer = $eventSerializer;
         $this->objectToArrayConverter = $objectToArrayConverter;
+        $this->eventFromCommitExtractor = $eventFromCommitExtractor;
     }
 
     public function loadEventsForAggregate(string $aggregateClass, $aggregateId): AggregateEventStream
@@ -112,6 +119,15 @@ class MongoEventStore implements EventStore
             $this->collection,
             $eventClasses,
             $this->eventSerializer);
+    }
+
+    public function findEventById(string $eventId): ?EventWithMetaData
+    {
+        $document = $this->collection->findOne([
+            'events.id' => $eventId,
+        ]);
+
+        return $document ? $this->eventFromCommitExtractor->extractEventFromCommit($document, $eventId) : null;
     }
 
     public function getAggregateVersion(string $aggregateClass, $aggregateId)
