@@ -23,17 +23,24 @@ trait EventStreamIteratorTrait
             $metaData = $this->extractMetaDataFromDocument($document);
 
             foreach ($document['events'] as $index => $eventSubDocument) {
-                $event = $this->eventSerializer->deserializeEvent($eventSubDocument['eventClass'], $eventSubDocument['payload']);
+                try
+                {
+                    $event = $this->eventSerializer->deserializeEvent($eventSubDocument['eventClass'], $eventSubDocument['payload']);
 
-                if ($eventSubDocument['id']) {
-                    $metaData = $metaData->withEventId($eventSubDocument['id']);
+                    if ($eventSubDocument['id']) {
+                        $metaData = $metaData->withEventId($eventSubDocument['id']);
+                    }
+
+                    if ($document['sequence']) {
+                        $metaData = $metaData->withSequenceAndIndex($document['sequence'], $index);
+                    }
+
+                    yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
                 }
+                catch (\Throwable $exception)
+                {
 
-                if ($document['sequence']) {
-                    $metaData = $metaData->withSequenceAndIndex($document['sequence'], $index);
                 }
-
-                yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
             }
 
         };

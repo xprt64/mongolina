@@ -66,6 +66,7 @@ class MongoEventStore implements EventStore
         $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, 'sequence' => 1]);
         $this->collection->createIndex(['sequence' => 1]);
+        $this->collection->createIndex(['events.id' => 1]);
     }
 
     public function dropStore()
