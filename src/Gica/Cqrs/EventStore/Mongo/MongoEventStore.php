@@ -90,6 +90,7 @@ class MongoEventStore implements EventStore
                 'sequence'            => 1 + $expectedSequence,
                 'createdAt'           => new UTCDateTime(microtime(true) * 1000),
                 'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
+                'commandMeta'         => $this->objectToArrayConverter->convert($firstEventWithMetaData->getMetaData()->getCommandMetadata()),
                 'events'              => $this->packEvents($eventsWithMetaData),
             ]);
         } catch (BulkWriteException $bulkWriteException) {
@@ -109,7 +110,6 @@ class MongoEventStore implements EventStore
             'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
             'id'              => $eventWithMetaData->getMetaData()->getEventId(),
-            'meta'            => $this->objectToArrayConverter->convert($eventWithMetaData->getMetaData()),
         ]);
     }
 
