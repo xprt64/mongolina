@@ -6,16 +6,14 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\Event\MetaData;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
-use MongoDB\BSON\UTCDateTime;
 
 /**
- * @property \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer
+ * @property EventSerializer $eventSerializer
  */
 trait EventStreamIteratorTrait
 {
-    use \Gica\Cqrs\EventStore\Mongo\DocumentParserTrait;
+    use DocumentParserTrait;
 
     private function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
@@ -23,8 +21,7 @@ trait EventStreamIteratorTrait
             $metaData = $this->extractMetaDataFromDocument($document);
 
             foreach ($document['events'] as $index => $eventSubDocument) {
-                try
-                {
+                try {
                     $event = $this->eventSerializer->deserializeEvent($eventSubDocument['eventClass'], $eventSubDocument['payload']);
 
                     if ($eventSubDocument['id']) {
@@ -36,9 +33,7 @@ trait EventStreamIteratorTrait
                     }
 
                     yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
-                }
-                catch (\Throwable $exception)
-                {
+                } catch (\Throwable $exception) {
 
                 }
             }

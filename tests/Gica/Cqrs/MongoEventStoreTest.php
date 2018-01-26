@@ -6,8 +6,10 @@
 namespace tests\Gica\Cqrs\EventStore\Mongo\MongoEventStoreTest;
 
 require_once __DIR__ . '/MongoTestHelper.php';
+
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\Event\MetaData;
+use Gica\Cqrs\EventStore\Mongo\EventFromCommitExtractor;
 use Gica\Cqrs\EventStore\Mongo\EventSerializer;
 use Gica\Cqrs\EventStore\Mongo\MongoEventStore;
 use Gica\Lib\ObjectToArrayConverter;
@@ -26,12 +28,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
     public function test_appendEventsForAggregate()
     {
-        $collection = $this->collection;
-
-        $eventStore = new MongoEventStore(
-            $collection,
-            new EventSerializer(),
-            new ObjectToArrayConverter());
+        $eventStore = $this->factoryEventStore();
 
         $eventStore->dropStore();
         $eventStore->createStore();
@@ -43,7 +40,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $eventStore->appendEventsForAggregate($aggregateId, $aggregateClass, $events, -1, 0);
 
-        $this->assertCount(1, $collection->find()->toArray());
+        $this->assertCount(1, $this->collection->find()->toArray());
 
         $stream = $eventStore->loadEventsForAggregate($aggregateClass, $aggregateId);
 
@@ -80,12 +77,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
      */
     public function test_appendEventsForAggregateShouldNotWriteTwiceTheSameEvents()
     {
-        $collection = $this->collection;
-
-        $eventStore = new MongoEventStore(
-            $collection,
-            new EventSerializer(),
-            new ObjectToArrayConverter());
+        $eventStore = $this->factoryEventStore();
 
         $eventStore->dropStore();
         $eventStore->createStore();
@@ -97,6 +89,17 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);
 
         $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);//should fail
+    }
+
+    private function factoryEventStore(): MongoEventStore
+    {
+        return new MongoEventStore(
+            $this->collection,
+            new EventSerializer(),
+            new ObjectToArrayConverter(),
+            new EventFromCommitExtractor(
+                new EventSerializer()
+            ));
     }
 }
 

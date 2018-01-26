@@ -6,9 +6,11 @@
 namespace tests\Gica\Cqrs\EventStore\Mongo\ScheduledCommandStoreTest;
 
 
+use Gica\Cqrs\Command\CommandMetadata;
 use Gica\Cqrs\EventStore\Mongo\CommandScheduler;
 use Gica\Cqrs\EventStore\Mongo\ScheduledCommandStore;
 use Gica\Cqrs\Scheduling\ScheduledCommand;
+use Gica\Types\Guid;
 use tests\Gica\Cqrs\MongoTestHelper;
 
 require_once __DIR__ . '/MongoTestHelper.php';
@@ -46,7 +48,9 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
             ->willReturn('1234');
 
         /** @var ScheduledCommand $command */
-        $commandScheduler->scheduleCommand($command, 'aggregateClass', 123, '');
+        $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
+
+        $commandScheduler->scheduleCommand($command, 'aggregateClass', 123, $commandMetadata);
 
         $this->assertCount(1, $collection->find()->toArray());
 
@@ -83,10 +87,12 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         $command->method('getMessageId')
             ->willReturn('1234');
 
-        $commandScheduler->scheduleCommand($command, '', '', '');
-        $commandScheduler->scheduleCommand($command, '', '', '');
-        $commandScheduler->scheduleCommand($command, '', '', '');
-        $commandScheduler->scheduleCommand($command, '', '', '');
+        $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
+
+        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
+        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
+        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
+        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
 
         $this->assertCount(1, $collection->find()->toArray());
     }

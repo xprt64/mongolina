@@ -131,7 +131,7 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
     /**
      * @param EventsCommit[] $commits
-     * @return EventWithMetaData[]|\Generator
+     * @return EventWithMetaData[]|\Iterator
      */
     private function extractEventsFromCommits($commits)
     {
@@ -144,11 +144,6 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         $generator = new IteratorExpander($expanderCallback);
 
         return $generator->__invoke($commits);
-    }
-
-    private function isInterestingEvent($eventClass)
-    {
-        return empty($this->eventClassNames) || in_array($eventClass, $this->eventClassNames);
     }
 
     private function getFilter(): array

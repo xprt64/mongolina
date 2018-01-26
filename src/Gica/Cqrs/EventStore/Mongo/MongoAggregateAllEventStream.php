@@ -6,20 +6,23 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use Gica\Cqrs\EventStore\AggregateEventStream;
 use MongoDB\BSON\ObjectID;
+use MongoDB\Collection;
+use MongoDB\Driver\Cursor;
 
-class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEventStream
+class MongoAggregateAllEventStream implements AggregateEventStream
 {
-    use \Gica\Cqrs\EventStore\Mongo\EventStreamIteratorTrait;
+    use EventStreamIteratorTrait;
 
     /**
-     * @var \MongoDB\Collection
+     * @var Collection
      */
     private $collection;
     private $aggregateId;
     private $version;
     /**
-     * @var \Gica\Cqrs\EventStore\Mongo\EventSerializer
+     * @var EventSerializer
      */
     private $eventSerializer;
     /**
@@ -31,10 +34,10 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
     private $sequence;
 
     public function __construct(
-        \MongoDB\Collection $collection,
+        Collection $collection,
         string $aggregateClass,
         $aggregateId,
-        \Gica\Cqrs\EventStore\Mongo\EventSerializer $eventSerializer
+        EventSerializer $eventSerializer
     )
     {
         $this->collection = $collection;
@@ -62,20 +65,18 @@ class MongoAggregateAllEventStream implements \Gica\Cqrs\EventStore\AggregateEve
 
     private function fetchLatestVersion(string $aggregateClass, $aggregateId): int
     {
-        return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
+        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
     }
 
     private function fetchLatestSequence(): int
     {
-        return (new \Gica\Cqrs\EventStore\Mongo\LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
+        return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
-    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId): \MongoDB\Driver\Cursor
+    private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId): Cursor
     {
         $cursor = $this->collection->find(
             [
-//                'aggregateId'    => (string)$aggregateId,
-//                'aggregateClass' => $aggregateClass,
                 'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
                 'version'    => [
                     '$lte' => $this->version,

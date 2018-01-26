@@ -6,9 +6,11 @@
 namespace Gica\Cqrs\EventStore\Mongo;
 
 
+use MongoDB\Collection;
+
 class LastAggregateSequenceFetcher
 {
-    public function fetchLatestSequence(\MongoDB\Collection $collection):int
+    public function fetchLatestSequence(Collection $collection):int
     {
         $cursor = $collection->find(
             [

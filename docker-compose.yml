@@ -9,6 +9,6 @@ services:
      - db
 
   db:
-    image: mongo:3.4
+    image: mongo:3.6
     logging:
        driver: none

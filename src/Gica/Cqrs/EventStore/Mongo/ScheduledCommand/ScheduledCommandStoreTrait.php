@@ -5,19 +5,18 @@
 
 namespace Gica\Cqrs\EventStore\Mongo\ScheduledCommand;
 
-use Gica\Cqrs\Scheduling\ScheduledCommand;
 use Gica\Types\Guid;
 use MongoDB\BSON\ObjectID;
-use MongoDB\BSON\UTCDateTime;
+use MongoDB\Collection;
 
 trait ScheduledCommandStoreTrait
 {
 
-    /* @var \MongoDB\Collection */
+    /* @var Collection */
     private $collection;
 
     public function __construct(
-        \MongoDB\Collection $collection
+        Collection $collection
     )
     {
         $this->collection = $collection;

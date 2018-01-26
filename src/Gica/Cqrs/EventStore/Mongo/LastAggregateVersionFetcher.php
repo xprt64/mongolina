@@ -7,10 +7,11 @@ namespace Gica\Cqrs\EventStore\Mongo;
 
 
 use MongoDB\BSON\ObjectID;
+use MongoDB\Collection;
 
 class LastAggregateVersionFetcher
 {
-    public function fetchLatestVersion(\MongoDB\Collection $collection, string $aggregateClass, $aggregateId):int
+    public function fetchLatestVersion(Collection $collection, string $aggregateClass, $aggregateId):int
     {
         $cursor = $collection->find(
             [

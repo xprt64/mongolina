@@ -29,7 +29,6 @@ class MongoTestHelper
         $retries = 0;
         while (true) {
             try {
-                //echo "trying to connect...\n";
                 $retries++;
                 $database = (new Client('mongodb://db'))
                     ->selectDatabase('test');
@@ -37,6 +36,7 @@ class MongoTestHelper
                 return $database;
             } catch (\Throwable $exception) {
                 echo $exception->getMessage() . "\n";
+                echo "retrying to connect...\n";
                 sleep(1);
 
                 if ($retries > 20) {

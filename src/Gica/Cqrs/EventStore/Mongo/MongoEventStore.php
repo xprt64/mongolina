@@ -9,10 +9,8 @@ namespace Gica\Cqrs\EventStore\Mongo;
 use Gica\Cqrs\Event\EventWithMetaData;
 use Gica\Cqrs\EventStore;
 use Gica\Cqrs\EventStore\AggregateEventStream;
-use Gica\Cqrs\EventStore\EventsCommit;
 use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
 use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
-use Gica\Cqrs\EventStore\Mongo\EventFromCommitExtractor;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
@@ -22,7 +20,7 @@ use MongoDB\Driver\Exception\BulkWriteException;
 class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
-    const EVENT_CLASS = 'eventClass';
+    const EVENT_CLASS        = 'eventClass';
 
     /** @var  Collection */
     protected $collection;
@@ -111,6 +109,7 @@ class MongoEventStore implements EventStore
             'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
             'id'              => $eventWithMetaData->getMetaData()->getEventId(),
+            'meta'            => $this->objectToArrayConverter->convert($eventWithMetaData->getMetaData()),
         ]);
     }
 
