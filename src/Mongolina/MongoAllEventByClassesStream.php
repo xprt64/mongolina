@@ -3,12 +3,12 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\EventStore\EventsCommit;
-use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
+use Dudulina\Event\EventWithMetaData;
+use Dudulina\EventStore\EventsCommit;
+use Dudulina\EventStore\EventStreamGroupedByCommit;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use MongoDB\Collection;

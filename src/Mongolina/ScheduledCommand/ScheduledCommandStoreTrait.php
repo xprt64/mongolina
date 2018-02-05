@@ -3,7 +3,7 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo\ScheduledCommand;
+namespace Mongolina\ScheduledCommand;
 
 use Gica\Types\Guid;
 use MongoDB\BSON\ObjectID;

@@ -3,18 +3,18 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace tests\Gica\Cqrs\EventStore\Mongo\MongoEventStoreTest;
+namespace tests\Dudulina\EventStore\Mongo\MongoEventStoreTest;
 
 require_once __DIR__ . '/MongoTestHelper.php';
 
-use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\Event\MetaData;
-use Gica\Cqrs\EventStore\Mongo\EventFromCommitExtractor;
-use Gica\Cqrs\EventStore\Mongo\EventSerializer;
-use Gica\Cqrs\EventStore\Mongo\MongoEventStore;
+use Dudulina\Event\EventWithMetaData;
+use Dudulina\Event\MetaData;
+use Mongolina\EventFromCommitExtractor;
+use Mongolina\EventSerializer;
+use Mongolina\MongoEventStore;
 use Gica\Lib\ObjectToArrayConverter;
 use Gica\Types\Guid;
-use tests\Gica\Cqrs\MongoTestHelper;
+use tests\Dudulina\MongoTestHelper;
 
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 {
@@ -73,7 +73,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Gica\Cqrs\EventStore\Exception\ConcurrentModificationException
+     * @expectedException \Dudulina\EventStore\Exception\ConcurrentModificationException
      */
     public function test_appendEventsForAggregateShouldNotWriteTwiceTheSameEvents()
     {
@@ -103,7 +103,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
     }
 }
 
-class Event1 implements \Gica\Cqrs\Event
+class Event1 implements \Dudulina\Event
 {
     private $field1;
 
@@ -123,7 +123,7 @@ class Event1 implements \Gica\Cqrs\Event
 
 }
 
-class Event2 implements \Gica\Cqrs\Event
+class Event2 implements \Dudulina\Event
 {
     private $field2;
 

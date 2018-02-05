@@ -3,9 +3,9 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
-use Gica\Cqrs\Event\EventWithMetaData;
+use Dudulina\Event\EventWithMetaData;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 
 /**

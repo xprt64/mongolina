@@ -3,21 +3,25 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
+use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
 
-class LastAggregateSequenceFetcher
+class LastAggregateVersionFetcher
 {
-    public function fetchLatestSequence(Collection $collection):int
+    public function fetchLatestVersion(Collection $collection, string $aggregateClass, $aggregateId):int
     {
         $cursor = $collection->find(
             [
+//                'aggregateId' => (string)$aggregateId,
+//                'aggregateClass' => $aggregateClass,
+                'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
             ],
             [
                 'sort'  => [
-                    'sequence' => -1,
+                    'version' => -1,
                 ],
                 'limit' => 1,
             ]
@@ -26,7 +30,7 @@ class LastAggregateSequenceFetcher
         $documents = $cursor->toArray();
         if ($documents) {
             $last = array_pop($documents);
-            $version = (int)$last['sequence'];
+            $version = (int)$last['version'];
         } else {
             $version = 0;
         }

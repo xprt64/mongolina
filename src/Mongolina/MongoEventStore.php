@@ -3,14 +3,14 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\EventStore;
-use Gica\Cqrs\EventStore\AggregateEventStream;
-use Gica\Cqrs\EventStore\EventStreamGroupedByCommit;
-use Gica\Cqrs\EventStore\Exception\ConcurrentModificationException;
+use Dudulina\Event\EventWithMetaData;
+use Dudulina\EventStore;
+use Dudulina\EventStore\AggregateEventStream;
+use Dudulina\EventStore\EventStreamGroupedByCommit;
+use Dudulina\EventStore\Exception\ConcurrentModificationException;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;

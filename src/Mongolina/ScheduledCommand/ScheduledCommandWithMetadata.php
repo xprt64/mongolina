@@ -3,11 +3,11 @@
  * Copyright (c) 2018 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo\ScheduledCommand;
+namespace Mongolina\ScheduledCommand;
 
 
-use Gica\Cqrs\Command\CommandMetadata;
-use Gica\Cqrs\Scheduling\ScheduledCommand;
+use Dudulina\Command\CommandMetadata;
+use Dudulina\Scheduling\ScheduledCommand;
 
 class ScheduledCommandWithMetadata
 {

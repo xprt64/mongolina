@@ -3,12 +3,12 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo\Saga;
+namespace Mongolina\Saga;
 
 
-use Gica\Cqrs\EventProcessing\ConcurentEventProcessingException;
-use Gica\Cqrs\EventProcessing\InProgressProcessingEvent;
-use Gica\Cqrs\EventStore\Mongo\EventProcessing\MongoInProgressProcessingEvent;
+use Dudulina\EventProcessing\ConcurentEventProcessingException;
+use Dudulina\EventProcessing\InProgressProcessingEvent;
+use Mongolina\EventProcessing\MongoInProgressProcessingEvent;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use Gica\MongoDB\Selector\Filter\Comparison\EqualDirect;
 use Gica\MongoDB\Selector\Selector;
@@ -17,7 +17,7 @@ use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
 
-class SagaEventTrackerRepository implements \Gica\Cqrs\Saga\SagaEventTrackerRepository
+class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepository
 {
 
     /**

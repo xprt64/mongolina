@@ -3,15 +3,15 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace tests\Gica\Cqrs\EventStore\Mongo\ScheduledCommandStoreTest;
+namespace tests\Dudulina\EventStore\Mongo\ScheduledCommandStoreTest;
 
 
-use Gica\Cqrs\Command\CommandMetadata;
-use Gica\Cqrs\EventStore\Mongo\CommandScheduler;
-use Gica\Cqrs\EventStore\Mongo\ScheduledCommandStore;
-use Gica\Cqrs\Scheduling\ScheduledCommand;
+use Dudulina\Command\CommandMetadata;
+use Mongolina\CommandScheduler;
+use Mongolina\ScheduledCommandStore;
+use Dudulina\Scheduling\ScheduledCommand;
 use Gica\Types\Guid;
-use tests\Gica\Cqrs\MongoTestHelper;
+use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/MongoTestHelper.php';
 

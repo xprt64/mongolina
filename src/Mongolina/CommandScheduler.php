@@ -1,15 +1,15 @@
 <?php
+/**
+ * Copyright (c) 2018 Constantin Galbenu <xprt64@gmail.com>
+ */
+namespace Mongolina;
 
-
-namespace Gica\Cqrs\EventStore\Mongo;
-
-
-use Gica\Cqrs\Command\CommandMetadata;
-use Gica\Cqrs\EventStore\Mongo\ScheduledCommand\ScheduledCommandStoreTrait;
-use Gica\Cqrs\Scheduling\ScheduledCommand;
+use Dudulina\Command\CommandMetadata;
+use Mongolina\ScheduledCommand\ScheduledCommandStoreTrait;
+use Dudulina\Scheduling\ScheduledCommand;
 use MongoDB\BSON\UTCDateTime;
 
-class CommandScheduler implements \Gica\Cqrs\Scheduling\CommandScheduler
+class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
 {
     use ScheduledCommandStoreTrait;
 

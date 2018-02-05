@@ -1,14 +1,14 @@
 <?php
 
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\EventStore\Mongo\ScheduledCommand\ScheduledCommandStoreTrait;
-use Gica\Cqrs\EventStore\Mongo\ScheduledCommand\ScheduledCommandWithMetadata;
+use Mongolina\ScheduledCommand\ScheduledCommandStoreTrait;
+use Mongolina\ScheduledCommand\ScheduledCommandWithMetadata;
 use MongoDB\BSON\UTCDateTime;
 
-class ScheduledCommandStore implements \Gica\Cqrs\Scheduling\ScheduledCommandStore
+class ScheduledCommandStore implements \Dudulina\Scheduling\ScheduledCommandStore
 {
     use ScheduledCommandStoreTrait;
 

@@ -3,10 +3,10 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo\EventProcessing;
+namespace Mongolina\EventProcessing;
 
 
-use Gica\Cqrs\EventProcessing\InProgressProcessingEvent;
+use Dudulina\EventProcessing\InProgressProcessingEvent;
 
 class MongoInProgressProcessingEvent implements InProgressProcessingEvent
 {

@@ -3,11 +3,11 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo\Saga\State;
+namespace Mongolina\Saga\State;
 
 
-use Gica\Cqrs\Saga\State\ProcessStateLoader;
-use Gica\Cqrs\Saga\State\ProcessStateUpdater;
+use Dudulina\Saga\State\ProcessStateLoader;
+use Dudulina\Saga\State\ProcessStateUpdater;
 use MongoDB\Collection;
 use MongoDB\Database;
 use MongoDB\Driver\Exception\BulkWriteException;

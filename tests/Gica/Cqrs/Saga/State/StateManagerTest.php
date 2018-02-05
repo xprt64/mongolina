@@ -3,10 +3,10 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace tests\Gica\Cqrs\Saga\State;
+namespace tests\Dudulina\Saga\State;
 
-use Gica\Cqrs\EventStore\Mongo\Saga\State\StateManager;
-use tests\Gica\Cqrs\MongoTestHelper;
+use Mongolina\Saga\State\StateManager;
+use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/../../MongoTestHelper.php';
 

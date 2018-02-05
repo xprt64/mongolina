@@ -3,18 +3,18 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\Event\EventWithMetaData;
-use Gica\Cqrs\Event\ScheduledEvent;
-use Gica\Cqrs\Scheduling\ScheduledEventWithMetadata;
+use Dudulina\Event\EventWithMetaData;
+use Dudulina\Event\ScheduledEvent;
+use Dudulina\Scheduling\ScheduledEventWithMetadata;
 use Gica\Types\Guid;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 
-class FutureEventsStore implements \Gica\Cqrs\FutureEventsStore
+class FutureEventsStore implements \Dudulina\FutureEventsStore
 {
 
     /* @var Collection */

@@ -3,10 +3,10 @@
  * Copyright (c) 2016 Constantin Galbenu <gica.galbenu@gmail.com>             *
  ******************************************************************************/
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\EventStore\AggregateEventStream;
+use Dudulina\EventStore\AggregateEventStream;
 use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;

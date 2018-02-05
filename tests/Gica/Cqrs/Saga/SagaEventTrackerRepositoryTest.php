@@ -3,11 +3,11 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace tests\Gica\Cqrs\Saga\SagaEventTrackerRepositoryTest;
+namespace tests\Dudulina\Saga\SagaEventTrackerRepositoryTest;
 
-use Gica\Cqrs\EventProcessing\ConcurentEventProcessingException;
-use Gica\Cqrs\EventStore\Mongo\Saga\SagaEventTrackerRepository;
-use tests\Gica\Cqrs\MongoTestHelper;
+use Dudulina\EventProcessing\ConcurentEventProcessingException;
+use Mongolina\Saga\SagaEventTrackerRepository;
+use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/../MongoTestHelper.php';
 
@@ -97,7 +97,7 @@ class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
         $this->sut->endProcessingEvent('someId', "2");
         $this->assertCount(1, $this->sut->getAllInProgressProcessingEvents('someId'));
 
-        /** @var \Gica\Cqrs\EventProcessing\InProgressProcessingEvent[]  $events */
+        /** @var \Dudulina\EventProcessing\InProgressProcessingEvent[]  $events */
         $events = iterator_to_array($this->sut->getAllInProgressProcessingEvents('someId'), false);
 
         $event = reset($events);

@@ -3,10 +3,10 @@
  * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace Gica\Cqrs\EventStore\Mongo;
+namespace Mongolina;
 
 
-use Gica\Cqrs\Event\MetaData;
+use Dudulina\Event\MetaData;
 use MongoDB\BSON\UTCDateTime;
 
 trait DocumentParserTrait
