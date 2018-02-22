@@ -9,9 +9,9 @@ namespace Mongolina;
 use Dudulina\Event\MetaData;
 use MongoDB\BSON\UTCDateTime;
 
-trait DocumentParserTrait
+class DocumentParser
 {
-    private function extractMetaDataFromDocument($document)
+    public function extractMetaDataFromDocument($document)
     {
         /** @var UTCDateTime $createdAt */
         $createdAt = $document['createdAt'];
@@ -25,12 +25,12 @@ trait DocumentParserTrait
         );
     }
 
-    private function extractSequenceFromDocument($document)
+    public function extractSequenceFromDocument($document)
     {
         return $document['sequence'];
     }
 
-    private function extractVersionFromDocument($document)
+    public function extractVersionFromDocument($document)
     {
         return $document['version'];
     }

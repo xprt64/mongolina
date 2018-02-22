@@ -9,8 +9,12 @@ require_once __DIR__ . '/MongoTestHelper.php';
 
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Mongolina\DocumentParser;
 use Mongolina\EventFromCommitExtractor;
 use Mongolina\EventSerializer;
+use Mongolina\EventStreamIterator;
+use Mongolina\MongoAggregateAllEventStreamFactory;
+use Mongolina\MongoAllEventByClassesStreamFactory;
 use Mongolina\MongoEventStore;
 use Gica\Lib\ObjectToArrayConverter;
 use Gica\Types\Guid;
@@ -18,6 +22,7 @@ use tests\Dudulina\MongoTestHelper;
 
 class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 {
+    const AGGREGATE_CLASS = 'aggClass';
     /** @var \MongoDB\Collection */
     private $collection;
 
@@ -34,7 +39,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $eventStore->createStore();
 
         $aggregateId = 123;
-        $aggregateClass = 'aggClass';
+        $aggregateClass = self::AGGREGATE_CLASS;
 
         $events = $this->wrapEventsWithMetadata($aggregateClass, $aggregateId, [new Event1(11), new Event2(22)]);
 
@@ -84,11 +89,11 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $aggregateId = 123;
 
-        $events = $this->wrapEventsWithMetadata($aggregateId, 'aggClass', [new Event1(11), new Event2(22)]);
+        $events = $this->wrapEventsWithMetadata($aggregateId, self::AGGREGATE_CLASS, [new Event1(11), new Event2(22)]);
 
-        $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);
+        $eventStore->appendEventsForAggregate($aggregateId, self::AGGREGATE_CLASS, $events, 0, 0);
 
-        $eventStore->appendEventsForAggregate($aggregateId, 'aggClass', $events, 0, 0);//should fail
+        $eventStore->appendEventsForAggregate($aggregateId, self::AGGREGATE_CLASS, $events, 0, 0);//should fail
     }
 
     private function factoryEventStore(): MongoEventStore
@@ -98,7 +103,19 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
             new EventSerializer(),
             new ObjectToArrayConverter(),
             new EventFromCommitExtractor(
-                new EventSerializer()
+                new EventSerializer(),
+                new DocumentParser()
+            ),
+            new MongoAggregateAllEventStreamFactory(
+                new EventStreamIterator(
+                    new EventSerializer(),
+                    new DocumentParser()
+                )
+            ),
+            new MongoAllEventByClassesStreamFactory(
+                new EventSerializer(),
+                new DocumentParser()
+
             ));
     }
 }

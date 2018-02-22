@@ -16,7 +16,6 @@ use MongoDB\Driver\Cursor;
 
 class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 {
-    use EventStreamIteratorTrait;
 
     /**
      * @var Collection
@@ -41,16 +40,22 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     private $beforeSequence;
 
     private $ascending = true;
+    /**
+     * @var DocumentParser
+     */
+    private $documentParser;
 
     public function __construct(
         Collection $collection,
         array $eventClassNames,
-        EventSerializer $eventSerializer
+        EventSerializer $eventSerializer,
+        DocumentParser $documentParser
     )
     {
         $this->collection = $collection;
         $this->eventSerializer = $eventSerializer;
         $this->eventClassNames = $eventClassNames;
+        $this->documentParser = $documentParser;
     }
 
     /**
@@ -89,44 +94,31 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
      */
     public function getIterator()
     {
-        $commits = $this->fetchCommits();
-
-        return $this->extractEventsFromCommits($commits);
+        return $this->extractEventsFromCommits($this->fetchCommits());
     }
 
-    /**
-     * @return EventsCommit[]
-     */
     public function fetchCommits()
     {
-        $cursor = $this->getCursor();
-
-        /** @var EventsCommit[] $commits */
-        return $this->getIteratorForCommits($cursor);
+        return $this->getIteratorForCommits($this->getCursor());
     }
 
     private function getCursor(): Cursor
     {
-        $options = [];
-
-        if ($this->ascending) {
-            $options['sort']['sequence'] = 1;
-        } else {
-            $options['sort']['sequence'] = -1;
-        }
+        $options = [
+            'sort'            => [
+                MongoEventStore::SEQUENCE => $this->ascending ? 1 : -1,
+            ],
+            'noCursorTimeout' => true,
+        ];
 
         if ($this->limit > 0) {
             $options['limit'] = $this->limit;
         }
 
-        $options['noCursorTimeout'] = true;
-
-        $cursor = $this->collection->find(
+        return $this->collection->find(
             $this->getFilter(),
             $options
         );
-
-        return $cursor;
     }
 
     /**
@@ -135,15 +127,11 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
      */
     private function extractEventsFromCommits($commits)
     {
-        $expanderCallback = function (EventsCommit $commit) {
+        return (new IteratorExpander(function (EventsCommit $commit) {
             foreach ($commit->getEventsWithMetadata() as $eventWithMetaData) {
                 yield $eventWithMetaData;
             }
-        };
-
-        $generator = new IteratorExpander($expanderCallback);
-
-        return $generator->__invoke($commits);
+        }))->__invoke($commits);
     }
 
     private function getFilter(): array
@@ -157,13 +145,13 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         }
 
         if ($this->afterSequence !== null) {
-            $filter['sequence'] = [
+            $filter[MongoEventStore::SEQUENCE] = [
                 '$gt' => $this->afterSequence,
             ];
         }
 
         if ($this->beforeSequence !== null) {
-            $filter['sequence'] = [
+            $filter[MongoEventStore::SEQUENCE] = [
                 '$lt' => $this->beforeSequence,
             ];
         }
@@ -174,10 +162,9 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     private function getIteratorForCommits($cursor): \Traversable
     {
         return (new IteratorMapper(function ($document) {
-            $metaData = $this->extractMetaDataFromDocument($document);
-
-            $sequence = $this->extractSequenceFromDocument($document);
-            $version = $this->extractVersionFromDocument($document);
+            $metaData = $this->documentParser->extractMetaDataFromDocument($document);
+            $sequence = $this->documentParser->extractSequenceFromDocument($document);
+            $version = $this->documentParser->extractVersionFromDocument($document);
 
             $events = [];
 

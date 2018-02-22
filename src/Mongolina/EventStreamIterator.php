@@ -8,17 +8,28 @@ namespace Mongolina;
 use Dudulina\Event\EventWithMetaData;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 
-/**
- * @property EventSerializer $eventSerializer
- */
-trait EventStreamIteratorTrait
+class EventStreamIterator
 {
-    use DocumentParserTrait;
+    /** @var EventSerializer */
+    private $eventSerializer;
 
-    private function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
+    /**
+     * @var DocumentParser
+     */
+    private $documentParser;
+
+    public function __construct(
+        EventSerializer $eventSerializer,
+        DocumentParser $documentParser)
+    {
+        $this->eventSerializer = $eventSerializer;
+        $this->documentParser = $documentParser;
+    }
+
+    public function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
-            $metaData = $this->extractMetaDataFromDocument($document);
+            $metaData = $this->documentParser->extractMetaDataFromDocument($document);
 
             foreach ($document['events'] as $index => $eventSubDocument) {
                 try {
@@ -34,7 +45,7 @@ trait EventStreamIteratorTrait
 
                     yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
                 } catch (\Throwable $exception) {
-
+                    //ignore any
                 }
             }
 

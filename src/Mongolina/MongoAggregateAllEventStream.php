@@ -13,18 +13,14 @@ use MongoDB\Driver\Cursor;
 
 class MongoAggregateAllEventStream implements AggregateEventStream
 {
-    use EventStreamIteratorTrait;
-
     /**
      * @var Collection
      */
     private $collection;
     private $aggregateId;
+
+    /** @var int */
     private $version;
-    /**
-     * @var EventSerializer
-     */
-    private $eventSerializer;
     /**
      * @var string
      */
@@ -32,30 +28,30 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
     /** @var  int */
     private $sequence;
+    /**
+     * @var EventStreamIterator
+     */
+    private $eventStreamIterator;
 
     public function __construct(
         Collection $collection,
         string $aggregateClass,
         $aggregateId,
-        EventSerializer $eventSerializer
+        EventStreamIterator $eventStreamIterator
     )
     {
         $this->collection = $collection;
         $this->aggregateClass = $aggregateClass;
         $this->aggregateId = $aggregateId;
-        $this->eventSerializer = $eventSerializer;
         $this->version = $this->fetchLatestVersion($aggregateClass, $aggregateId);
         $this->sequence = $this->fetchLatestSequence();
+        $this->eventStreamIterator = $eventStreamIterator;
     }
 
-    /**
-     * @inheritdoc
-     */
     public function getIterator()
     {
-        $cursor = $this->getCursorLessThanOrEqualToVersion($this->aggregateClass, $this->aggregateId);
-
-        return $this->getIteratorThatExtractsEventsFromDocument($cursor);
+        return $this->eventStreamIterator->getIteratorThatExtractsEventsFromDocument(
+            $this->getCursorLessThanOrEqualToVersion($this->aggregateClass, $this->aggregateId));
     }
 
     public function getVersion(): int
@@ -75,7 +71,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
     private function getCursorLessThanOrEqualToVersion(string $aggregateClass, $aggregateId): Cursor
     {
-        $cursor = $this->collection->find(
+        return $this->collection->find(
             [
                 'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
                 'version'    => [
@@ -88,7 +84,6 @@ class MongoAggregateAllEventStream implements AggregateEventStream
                 ],
             ]
         );
-        return $cursor;
     }
 
     public function getSequence(): int

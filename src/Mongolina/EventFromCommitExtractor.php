@@ -10,25 +10,28 @@ use Dudulina\Event\EventWithMetaData;
 
 class EventFromCommitExtractor
 {
-    use DocumentParserTrait;
-
     /**
      * @var EventSerializer
      */
     private $eventSerializer;
+    /**
+     * @var DocumentParser
+     */
+    private $documentParser;
 
     public function __construct(
-        EventSerializer $eventSerializer
+        EventSerializer $eventSerializer,
+        DocumentParser $documentParser
     )
     {
         $this->eventSerializer = $eventSerializer;
+        $this->documentParser = $documentParser;
     }
 
     public function extractEventFromCommit(array $document, string $eventId): ?EventWithMetaData
     {
-        $metaData = $this->extractMetaDataFromDocument($document);
-
-        $sequence = $this->extractSequenceFromDocument($document);
+        $metaData = $this->documentParser->extractMetaDataFromDocument($document);
+        $sequence = $this->documentParser->extractSequenceFromDocument($document);
 
         foreach ($document['events'] as $index => $eventSubDocument) {
             if ($eventSubDocument['id'] !== $eventId) {

@@ -21,6 +21,7 @@ class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
     const EVENT_CLASS        = 'eventClass';
+    const SEQUENCE           = 'sequence';
 
     /** @var  Collection */
     protected $collection;
@@ -36,34 +37,42 @@ class MongoEventStore implements EventStore
      * @var EventFromCommitExtractor
      */
     private $eventFromCommitExtractor;
+    /**
+     * @var MongoAggregateAllEventStreamFactory
+     */
+    private $aggregateEventStreamFactory;
+    /**
+     * @var MongoAllEventByClassesStreamFactory
+     */
+    private $allEventByClassesStreamFactory;
 
     public function __construct(
         Collection $collection,
         EventSerializer $eventSerializer,
         ObjectToArrayConverter $objectToArrayConverter,
-        EventFromCommitExtractor $eventFromCommitExtractor
+        EventFromCommitExtractor $eventFromCommitExtractor,
+        MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
+        MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory
     )
     {
         $this->collection = $collection;
         $this->eventSerializer = $eventSerializer;
         $this->objectToArrayConverter = $objectToArrayConverter;
         $this->eventFromCommitExtractor = $eventFromCommitExtractor;
+        $this->aggregateEventStreamFactory = $aggregateEventStreamFactory;
+        $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
     }
 
     public function loadEventsForAggregate(string $aggregateClass, $aggregateId): AggregateEventStream
     {
-        return new MongoAggregateAllEventStream(
-            $this->collection,
-            $aggregateClass,
-            $aggregateId,
-            $this->eventSerializer);
+        return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateClass, $aggregateId);
     }
 
     public function createStore()
     {
         $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
-        $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, 'sequence' => 1]);
-        $this->collection->createIndex(['sequence' => 1]);
+        $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::SEQUENCE => 1]);
+        $this->collection->createIndex([self::SEQUENCE => 1]);
         $this->collection->createIndex(['events.id' => 1]);
     }
 
@@ -87,7 +96,7 @@ class MongoEventStore implements EventStore
                 'aggregateId'         => (string)$aggregateId,
                 'aggregateClass'      => $aggregateClass,
                 'version'             => 1 + $expectedVersion,
-                'sequence'            => 1 + $expectedSequence,
+                self::SEQUENCE        => 1 + $expectedSequence,
                 'createdAt'           => new UTCDateTime(microtime(true) * 1000),
                 'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
                 'commandMeta'         => $this->objectToArrayConverter->convert($firstEventWithMetaData->getMetaData()->getCommandMetadata()),
@@ -115,10 +124,7 @@ class MongoEventStore implements EventStore
 
     public function loadEventsByClassNames(array $eventClasses): EventStreamGroupedByCommit
     {
-        return new MongoAllEventByClassesStream(
-            $this->collection,
-            $eventClasses,
-            $this->eventSerializer);
+        return $this->allEventByClassesStreamFactory->createStream($this->collection, $eventClasses);
     }
 
     public function findEventById(string $eventId): ?EventWithMetaData
