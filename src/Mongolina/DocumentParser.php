@@ -21,7 +21,7 @@ class DocumentParser
             (string)$document['aggregateId'],
             $document['aggregateClass'],
             $dateCreated,
-            $document['authenticatedUserId'] ? $document['authenticatedUserId'] : null
+            $document['authenticatedUserId']
         );
     }
 

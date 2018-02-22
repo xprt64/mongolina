@@ -4,6 +4,7 @@
  */
 namespace Mongolina;
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Command\CommandMetadata;
 use Mongolina\ScheduledCommand\ScheduledCommandStoreTrait;
 use Dudulina\Scheduling\ScheduledCommand;
@@ -13,7 +14,7 @@ class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
 {
     use ScheduledCommandStoreTrait;
 
-    public function scheduleCommand(ScheduledCommand $scheduledCommand, string $aggregateClass, $aggregateId, CommandMetadata $commandMetadata = null)
+    public function scheduleCommand(ScheduledCommand $scheduledCommand, AggregateDescriptor $aggregateDescriptor, CommandMetadata $commandMetadata = null)
     {
         $messageIdToMongoId = $this->messageIdToMongoId($scheduledCommand->getMessageId());
 
@@ -26,8 +27,8 @@ class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
                 'command'         => \serialize($scheduledCommand),
                 'commandMetadata' => $commandMetadata ? \serialize($commandMetadata) : null,
                 'aggregate'       => [
-                    'id'    => (string)$aggregateId,
-                    'class' => $aggregateClass,
+                    'id'    => (string)$aggregateDescriptor->getAggregateId(),
+                    'class' => $aggregateDescriptor->getAggregateClass(),
                 ],
             ],
         ], [

@@ -58,10 +58,10 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             $document = reset($documents);
             $version = (int)$document['version'];
             return unserialize($document['payload']);
-        } else {
-            $version = 0;
-            return null;
         }
+
+        $version = 0;
+        return null;
     }
 
     public function updateState($stateId, callable $updater, string $namespace = 'global_namespace')
@@ -81,7 +81,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         $reflection = new \ReflectionFunction($update);
 
         if ($reflection->getNumberOfParameters() <= 0) {
-            throw new \Exception("Updater callback must have one type-hinted parameter");
+            throw new \InvalidArgumentException("Updater callback must have one type-hinted parameter");
         }
 
         $parameter = $reflection->getParameters()[0];
@@ -101,7 +101,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             }
         }
 
-        $newState = call_user_func($updater, $currentState);
+        $newState = \call_user_func($updater, $currentState);
 
         $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $namespace);
     }

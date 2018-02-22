@@ -6,6 +6,7 @@
 namespace Mongolina;
 
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\EventStore;
 use Dudulina\EventStore\AggregateEventStream;
@@ -13,6 +14,7 @@ use Dudulina\EventStore\EventStreamGroupedByCommit;
 use Dudulina\EventStore\Exception\ConcurrentModificationException;
 use Gica\Lib\ObjectToArrayConverter;
 use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
@@ -20,8 +22,8 @@ use MongoDB\Driver\Exception\BulkWriteException;
 class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
-    const EVENT_CLASS        = 'eventClass';
-    const SEQUENCE           = 'sequence';
+    const EVENT_CLASS = 'eventClass';
+    const SEQUENCE = 'sequence';
 
     /** @var  Collection */
     protected $collection;
@@ -63,9 +65,9 @@ class MongoEventStore implements EventStore
         $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
     }
 
-    public function loadEventsForAggregate(string $aggregateClass, $aggregateId): AggregateEventStream
+    public function loadEventsForAggregate(AggregateDescriptor $aggregateDescriptor): AggregateEventStream
     {
-        return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateClass, $aggregateId);
+        return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateDescriptor);
     }
 
     public function createStore()
@@ -81,7 +83,7 @@ class MongoEventStore implements EventStore
         $this->collection->drop();
     }
 
-    public function appendEventsForAggregate($aggregateId, string $aggregateClass, $eventsWithMetaData, int $expectedVersion, int $expectedSequence)
+    public function appendEventsForAggregate(AggregateDescriptor $aggregateDescriptor, $eventsWithMetaData, AggregateEventStream $expectedEventStream): void
     {
         if (!$eventsWithMetaData) {
             return;
@@ -92,11 +94,12 @@ class MongoEventStore implements EventStore
         try {
             $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
             $this->collection->insertOne([
-                'streamName'          => new ObjectID($this->factoryStreamName($aggregateClass, $aggregateId)),
-                'aggregateId'         => (string)$aggregateId,
-                'aggregateClass'      => $aggregateClass,
-                'version'             => 1 + $expectedVersion,
-                self::SEQUENCE        => 1 + $expectedSequence,
+                'streamName'          => new ObjectID($this->factoryStreamName($aggregateDescriptor->getAggregateClass(), $aggregateDescriptor->getAggregateId())),
+                'aggregateId'         => (string)$aggregateDescriptor->getAggregateId(),
+                'aggregateClass'      => $aggregateDescriptor->getAggregateClass(),
+                'version'             => 1 + $expectedEventStream->getVersion(),
+                'ts'                  => new Timestamp(0, 0),
+                self::SEQUENCE        => 1 + $expectedEventStream->getSequence(),
                 'createdAt'           => new UTCDateTime(microtime(true) * 1000),
                 'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
                 'commandMeta'         => $this->objectToArrayConverter->convert($firstEventWithMetaData->getMetaData()->getCommandMetadata()),
@@ -115,7 +118,7 @@ class MongoEventStore implements EventStore
     private function packEvent(EventWithMetaData $eventWithMetaData): array
     {
         return array_merge([
-            self::EVENT_CLASS => get_class($eventWithMetaData->getEvent()),
+            self::EVENT_CLASS => \get_class($eventWithMetaData->getEvent()),
             'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
             'id'              => $eventWithMetaData->getMetaData()->getEventId(),
@@ -136,9 +139,9 @@ class MongoEventStore implements EventStore
         return $document ? $this->eventFromCommitExtractor->extractEventFromCommit($document, $eventId) : null;
     }
 
-    public function getAggregateVersion(string $aggregateClass, $aggregateId)
+    public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
-        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateClass, $aggregateId);
+        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
     }
 
     public function fetchLatestSequence(): int

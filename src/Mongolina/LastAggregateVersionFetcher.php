@@ -6,18 +6,17 @@
 namespace Mongolina;
 
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
 
 class LastAggregateVersionFetcher
 {
-    public function fetchLatestVersion(Collection $collection, string $aggregateClass, $aggregateId):int
+    public function fetchLatestVersion(Collection $collection, AggregateDescriptor $aggregateDescriptor): int
     {
         $cursor = $collection->find(
             [
-//                'aggregateId' => (string)$aggregateId,
-//                'aggregateClass' => $aggregateClass,
-                'streamName' => new ObjectID(StreamName::factoryStreamName($aggregateClass, $aggregateId)),
+                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor)),
             ],
             [
                 'sort'  => [

@@ -30,8 +30,10 @@ class MongoTestHelper
         while (true) {
             try {
                 $retries++;
-                $database = (new Client('mongodb://db'))
+                $database = (new Client('mongodb://db/'))
                     ->selectDatabase('test');
+
+                iterator_to_array($database->listCollections());
 
                 return $database;
             } catch (\Throwable $exception) {
@@ -39,8 +41,8 @@ class MongoTestHelper
                 echo "retrying to connect...\n";
                 sleep(1);
 
-                if ($retries > 20) {
-                    die("too many retries, " . $exception->getMessage() . "\n");
+                if ($retries > 200) {
+                    throw new \InvalidArgumentException("too many retries, " . $exception->getMessage() . "\n");
                 }
                 continue;
             }

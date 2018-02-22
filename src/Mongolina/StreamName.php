@@ -6,10 +6,17 @@
 namespace Mongolina;
 
 
+use Dudulina\Aggregate\AggregateDescriptor;
+
 class StreamName
 {
     public static function factoryStreamName(string $aggregateClass, $aggregateId)
     {
-        return substr(hash('sha256', $aggregateClass . $aggregateId), 0, 24);
+        return self::factoryStreamNameFromDescriptor(new AggregateDescriptor($aggregateId, $aggregateClass));
+    }
+
+    public static function factoryStreamNameFromDescriptor(AggregateDescriptor $aggregateDescriptor)
+    {
+        return substr(hash('sha256', $aggregateDescriptor->getAggregateClass() . $aggregateDescriptor->getAggregateId()), 0, 24);
     }
 }

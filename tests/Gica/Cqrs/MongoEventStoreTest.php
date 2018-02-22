@@ -7,6 +7,7 @@ namespace tests\Dudulina\EventStore\Mongo\MongoEventStoreTest;
 
 require_once __DIR__ . '/MongoTestHelper.php';
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
 use Mongolina\DocumentParser;
@@ -41,13 +42,15 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $aggregateId = 123;
         $aggregateClass = self::AGGREGATE_CLASS;
 
+        $expectedEventStream = $eventStore->loadEventsForAggregate($this->factoryAggregateDescriptor());
+
         $events = $this->wrapEventsWithMetadata($aggregateClass, $aggregateId, [new Event1(11), new Event2(22)]);
 
-        $eventStore->appendEventsForAggregate($aggregateId, $aggregateClass, $events, -1, 0);
+        $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
 
         $this->assertCount(1, $this->collection->find()->toArray());
 
-        $stream = $eventStore->loadEventsForAggregate($aggregateClass, $aggregateId);
+        $stream = $eventStore->loadEventsForAggregate($this->factoryAggregateDescriptor());
 
         $events = iterator_to_array($stream->getIterator());
 
@@ -55,6 +58,11 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf(Event1::class, $events[0]->getEvent());
         $this->assertInstanceOf(Event2::class, $events[1]->getEvent());
+    }
+
+    private function factoryAggregateDescriptor(): AggregateDescriptor
+    {
+        return new AggregateDescriptor(123, self::AGGREGATE_CLASS);
     }
 
     private function wrapEventsWithMetadata($aggregateClass, $aggregateId, $events)
@@ -91,9 +99,11 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $events = $this->wrapEventsWithMetadata($aggregateId, self::AGGREGATE_CLASS, [new Event1(11), new Event2(22)]);
 
-        $eventStore->appendEventsForAggregate($aggregateId, self::AGGREGATE_CLASS, $events, 0, 0);
+        $expectedEventStream = $eventStore->loadEventsForAggregate($this->factoryAggregateDescriptor());
 
-        $eventStore->appendEventsForAggregate($aggregateId, self::AGGREGATE_CLASS, $events, 0, 0);//should fail
+        $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
+
+        $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
     }
 
     private function factoryEventStore(): MongoEventStore

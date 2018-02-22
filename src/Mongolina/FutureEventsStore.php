@@ -30,7 +30,7 @@ class FutureEventsStore implements \Dudulina\FutureEventsStore
     public function loadAndProcessScheduledEvents(callable $eventProcessor)
     {
         while ($scheduledEvent = $this->loadOneEvent()) {
-            call_user_func($eventProcessor, $scheduledEvent);
+            \call_user_func($eventProcessor, $scheduledEvent);
         }
     }
 

@@ -6,6 +6,7 @@
 namespace Mongolina;
 
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\EventStore\AggregateEventStream;
 use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
@@ -25,10 +26,8 @@ class MongoAggregateAllEventStreamFactory
         $this->eventStreamIterator = $eventStreamIterator;
     }
 
-    public function createStream(Collection $collection,
-                                 string $aggregateClass,
-                                 $aggregateId): AggregateEventStream
+    public function createStream(Collection $collection, AggregateDescriptor $aggregateDescriptor): AggregateEventStream
     {
-        return new MongoAggregateAllEventStream($collection, $aggregateClass, $aggregateId, $this->eventStreamIterator);
+        return new MongoAggregateAllEventStream($collection, $aggregateDescriptor, $this->eventStreamIterator);
     }
 }

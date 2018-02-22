@@ -6,6 +6,7 @@
 namespace tests\Dudulina\EventStore\Mongo\ScheduledCommandStoreTest;
 
 
+use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Command\CommandMetadata;
 use Mongolina\CommandScheduler;
 use Mongolina\ScheduledCommandStore;
@@ -50,7 +51,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         /** @var ScheduledCommand $command */
         $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
 
-        $commandScheduler->scheduleCommand($command, 'aggregateClass', 123, $commandMetadata);
+        $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
 
         $this->assertCount(1, $collection->find()->toArray());
 
@@ -89,11 +90,16 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
 
         $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
 
-        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
-        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
-        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
-        $commandScheduler->scheduleCommand($command, '', '', $commandMetadata);
+        $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
+        $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
+        $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
+        $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
 
         $this->assertCount(1, $collection->find()->toArray());
+    }
+
+    private function factoryAggregateDescriptor(): AggregateDescriptor
+    {
+        return new AggregateDescriptor(123, 'aggregateClass');
     }
 }

@@ -15,7 +15,7 @@ class ScheduledCommandStore implements \Dudulina\Scheduling\ScheduledCommandStor
     public function loadAndProcessScheduledCommands(callable $eventProcessor/** function(ScheduledCommand $scheduledCommand, CommandMetadata $metadata = null) */)
     {
         while (($commandWithMetadata = $this->loadOneCommand())) {
-            call_user_func($eventProcessor, $commandWithMetadata->getScheduledCommand(), $commandWithMetadata->getCommandMetadata());
+            \call_user_func($eventProcessor, $commandWithMetadata->getScheduledCommand(), $commandWithMetadata->getCommandMetadata());
         }
     }
 
