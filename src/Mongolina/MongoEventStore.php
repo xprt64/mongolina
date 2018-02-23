@@ -22,8 +22,9 @@ use MongoDB\Driver\Exception\BulkWriteException;
 class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
-    const EVENT_CLASS = 'eventClass';
-    const SEQUENCE = 'sequence';
+    const EVENT_CLASS        = 'eventClass';
+    const SEQUENCE           = 'sequence';
+    const TS                 = 'ts';
 
     /** @var  Collection */
     protected $collection;
@@ -75,6 +76,8 @@ class MongoEventStore implements EventStore
         $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::SEQUENCE => 1]);
         $this->collection->createIndex([self::SEQUENCE => 1]);
+        $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::TS => 1]);
+        $this->collection->createIndex([self::TS => 1]);
         $this->collection->createIndex(['events.id' => 1]);
     }
 

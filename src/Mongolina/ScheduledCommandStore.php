@@ -40,7 +40,7 @@ class ScheduledCommandStore implements \Dudulina\Scheduling\ScheduledCommandStor
     {
         return new ScheduledCommandWithMetadata(
             unserialize($document['command']),
-            $document['command'] ? unserialize($document['commandMetadata']) : null);
+            $document['commandMetadata'] ? unserialize($document['commandMetadata']) : null);
     }
 
     public function cancelCommand($commandId)
