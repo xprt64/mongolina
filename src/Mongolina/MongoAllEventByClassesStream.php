@@ -115,7 +115,7 @@ class MongoAllEventByClassesStream implements EventStream
 
     private function getCursorForEvents(): \Traversable
     {
-        $pipeline = $this->getEventsPipeline();
+        $pipeline = $this->getEventsPipeline(true);
 
         $options = [
             'noCursorTimeout' => true,
@@ -166,7 +166,7 @@ class MongoAllEventByClassesStream implements EventStream
         }))($documents);
     }
 
-    private function getEventsPipeline(): array
+    private function getEventsPipeline(bool $sorted = true): array
     {
         $pipeline = [];
 
@@ -176,11 +176,13 @@ class MongoAllEventByClassesStream implements EventStream
             ];
         }
 
-        $pipeline[] = [
-            '$sort' => [
-                MongoEventStore::TS => $this->ascending ? 1 : -1,
-            ],
-        ];
+        if ($sorted) {
+            $pipeline[] = [
+                '$sort' => [
+                    MongoEventStore::TS => $this->ascending ? 1 : -1,
+                ],
+            ];
+        }
 
         $pipeline[] = [
             '$unwind' => '$events',
@@ -202,7 +204,7 @@ class MongoAllEventByClassesStream implements EventStream
 
     public function count()
     {
-        $pipeline = $this->getEventsPipeline();
+        $pipeline = $this->getEventsPipeline(false);
 
         $pipeline[] = [
             '$count' => 'total',
