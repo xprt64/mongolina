@@ -6,32 +6,27 @@
 namespace Mongolina;
 
 
+use Mongolina\EventsCommit\CommitSerializer;
 use MongoDB\Collection;
 
 class MongoAllEventByClassesStreamFactory
 {
     /**
-     * @var EventSerializer
+     * @var CommitSerializer
      */
-    private $eventSerializer;
-    /**
-     * @var DocumentParser
-     */
-    private $documentParser;
+    private $commitSerializer;
 
     public function __construct(
-        EventSerializer $eventSerializer,
-        DocumentParser $documentParser
+        CommitSerializer $commitSerializer
     )
     {
-        $this->eventSerializer = $eventSerializer;
-        $this->documentParser = $documentParser;
+        $this->commitSerializer = $commitSerializer;
     }
 
     public function createStream(Collection $collection, array $eventClassNames): MongoAllEventByClassesStream
     {
         return new MongoAllEventByClassesStream(
-            $collection, $eventClassNames, $this->eventSerializer, $this->documentParser
+            $collection, $eventClassNames, $this->commitSerializer
         );
     }
 }

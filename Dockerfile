@@ -25,4 +25,4 @@ RUN pecl install mongodb && echo "extension=mongodb.so" > /usr/local/etc/php/con
 
 COPY ./ /app/
 
-CMD php /app/vendor/bin/phpunit --bootstrap  /app/vendor/autoload.php /app/tests/Gica/Cqrs
+CMD php /app/vendor/bin/phpunit --bootstrap  /app/vendor/autoload.php /app/tests/Mongolina

@@ -10,9 +10,9 @@ use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\EventStore;
 use Dudulina\EventStore\AggregateEventStream;
-use Dudulina\EventStore\EventStreamGroupedByCommit;
+use Dudulina\EventStore\EventStream;
 use Dudulina\EventStore\Exception\ConcurrentModificationException;
-use Gica\Lib\ObjectToArrayConverter;
+use Mongolina\EventsCommit\CommitSerializer;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
@@ -22,24 +22,15 @@ use MongoDB\Driver\Exception\BulkWriteException;
 class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
+    const EVENTS             = 'events';
     const EVENT_CLASS        = 'eventClass';
     const SEQUENCE           = 'sequence';
     const TS                 = 'ts';
+    const PAYLOAD            = 'payload';
+    const DUMP               = 'dump';
 
     /** @var  Collection */
     protected $collection;
-    /**
-     * @var EventSerializer
-     */
-    private $eventSerializer;
-    /**
-     * @var ObjectToArrayConverter
-     */
-    private $objectToArrayConverter;
-    /**
-     * @var EventFromCommitExtractor
-     */
-    private $eventFromCommitExtractor;
     /**
      * @var MongoAggregateAllEventStreamFactory
      */
@@ -48,22 +39,22 @@ class MongoEventStore implements EventStore
      * @var MongoAllEventByClassesStreamFactory
      */
     private $allEventByClassesStreamFactory;
+    /**
+     * @var \Mongolina\EventsCommit\CommitSerializer
+     */
+    private $commitSerializer;
 
     public function __construct(
         Collection $collection,
-        EventSerializer $eventSerializer,
-        ObjectToArrayConverter $objectToArrayConverter,
-        EventFromCommitExtractor $eventFromCommitExtractor,
         MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
-        MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory
+        MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory,
+        CommitSerializer $commitSerializer
     )
     {
         $this->collection = $collection;
-        $this->eventSerializer = $eventSerializer;
-        $this->objectToArrayConverter = $objectToArrayConverter;
-        $this->eventFromCommitExtractor = $eventFromCommitExtractor;
         $this->aggregateEventStreamFactory = $aggregateEventStreamFactory;
         $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
+        $this->commitSerializer = $commitSerializer;
     }
 
     public function loadEventsForAggregate(AggregateDescriptor $aggregateDescriptor): AggregateEventStream
@@ -92,43 +83,35 @@ class MongoEventStore implements EventStore
             return;
         }
 
+        /** @var MongoAggregateAllEventStream $expectedEventStream */
+
         $firstEventWithMetaData = reset($eventsWithMetaData);
 
         try {
             $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
-            $this->collection->insertOne([
-                'streamName'          => new ObjectID($this->factoryStreamName($aggregateDescriptor->getAggregateClass(), $aggregateDescriptor->getAggregateId())),
-                'aggregateId'         => (string)$aggregateDescriptor->getAggregateId(),
-                'aggregateClass'      => $aggregateDescriptor->getAggregateClass(),
-                'version'             => 1 + $expectedEventStream->getVersion(),
-                'ts'                  => new Timestamp(0, 0),
-                self::SEQUENCE        => 1 + $expectedEventStream->getSequence(),
-                'createdAt'           => new UTCDateTime(microtime(true) * 1000),
-                'authenticatedUserId' => $authenticatedUserId ? (string)$authenticatedUserId : null,
-                'commandMeta'         => $this->objectToArrayConverter->convert($firstEventWithMetaData->getMetaData()->getCommandMetadata()),
-                'events'              => $this->packEvents($eventsWithMetaData),
-            ]);
+
+            $this->collection->insertOne(
+                $this->commitSerializer->toDocument(
+                    new EventsCommit(
+                        new ObjectID($this->factoryStreamName($aggregateDescriptor->getAggregateClass(), $aggregateDescriptor->getAggregateId())),
+                        (string)$aggregateDescriptor->getAggregateId(),
+                        $aggregateDescriptor->getAggregateClass(),
+                        1 + $expectedEventStream->getVersion(),
+                        new Timestamp(0, 0),
+                        1 + $expectedEventStream->getSequence(),
+                        new UTCDateTime(microtime(true) * 1000),
+                        $authenticatedUserId ? (string)$authenticatedUserId : null,
+                        $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
+                        $eventsWithMetaData
+                    )
+                )
+            );
         } catch (BulkWriteException $bulkWriteException) {
             throw new ConcurrentModificationException($bulkWriteException->getMessage());
         }
     }
 
-    private function packEvents($events): array
-    {
-        return array_map([$this, 'packEvent'], $events);
-    }
-
-    private function packEvent(EventWithMetaData $eventWithMetaData): array
-    {
-        return array_merge([
-            self::EVENT_CLASS => \get_class($eventWithMetaData->getEvent()),
-            'payload'         => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
-            'dump'            => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
-            'id'              => $eventWithMetaData->getMetaData()->getEventId(),
-        ]);
-    }
-
-    public function loadEventsByClassNames(array $eventClasses): EventStreamGroupedByCommit
+    public function loadEventsByClassNames(array $eventClasses): EventStream
     {
         return $this->allEventByClassesStreamFactory->createStream($this->collection, $eventClasses);
     }
@@ -139,7 +122,7 @@ class MongoEventStore implements EventStore
             'events.id' => $eventId,
         ]);
 
-        return $document ? $this->eventFromCommitExtractor->extractEventFromCommit($document, $eventId) : null;
+        return $document ? $this->commitSerializer->extractEventFromCommit($document, $eventId) : null;
     }
 
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
@@ -156,5 +139,4 @@ class MongoEventStore implements EventStore
     {
         return StreamName::factoryStreamName($aggregateClass, $aggregateId);
     }
-
 }

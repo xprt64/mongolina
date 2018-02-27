@@ -5,50 +5,36 @@
 
 namespace Mongolina;
 
-use Dudulina\Event\EventWithMetaData;
+use Mongolina\EventsCommit\CommitSerializer;
 use Gica\Iterator\IteratorTransformer\IteratorExpander;
 
 class EventStreamIterator
 {
-    /** @var EventSerializer */
-    private $eventSerializer;
-
     /**
-     * @var DocumentParser
+     * @var \Mongolina\EventsCommit\CommitSerializer
      */
-    private $documentParser;
+    private $commitSerializer;
 
     public function __construct(
-        EventSerializer $eventSerializer,
-        DocumentParser $documentParser)
+        CommitSerializer $commitSerializer
+    )
     {
-        $this->eventSerializer = $eventSerializer;
-        $this->documentParser = $documentParser;
+        $this->commitSerializer = $commitSerializer;
     }
 
     public function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
-            $metaData = $this->documentParser->extractMetaDataFromDocument($document);
-
-            foreach ($document['events'] as $index => $eventSubDocument) {
+            foreach ($document['events'] as $eventSubDocument) {
                 try {
-                    $event = $this->eventSerializer->deserializeEvent($eventSubDocument['eventClass'], $eventSubDocument['payload']);
-
-                    if ($eventSubDocument['id']) {
-                        $metaData = $metaData->withEventId($eventSubDocument['id']);
-                    }
-
-                    if ($document['sequence']) {
-                        $metaData = $metaData->withSequenceAndIndex($document['sequence'], $index);
-                    }
-
-                    yield new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
+                    yield $this->commitSerializer->extractEventFromSubDocument($eventSubDocument, $document);
                 } catch (\Throwable $exception) {
-                    //ignore any
+                    var_dump($exception->getMessage());
+                    var_dump($exception->getFile());
+                    var_dump($exception->getLine());
+                    die();
                 }
             }
-
         };
 
         $generator = new IteratorExpander($expanderCallback);

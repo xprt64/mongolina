@@ -1,27 +1,26 @@
 <?php
 /**
- * Copyright (c) 2017 Constantin Galbenu <xprt64@gmail.com>
+ * Copyright (c) 2018 Constantin Galbenu <xprt64@gmail.com>
  */
 
-namespace tests\Dudulina\EventStore\Mongo\MongoEventStoreTest;
+namespace tests\Dudulina\EventStore\Mongo\MongoEventStoreReadEventsTest;
 
 require_once __DIR__ . '/MongoTestHelper.php';
 
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
-use Mongolina\DocumentParser;
-use Mongolina\EventFromCommitExtractor;
+use Mongolina\EventsCommit\CommitSerializer;
+use Gica\Lib\ObjectToArrayConverter;
+use Gica\Types\Guid;
 use Mongolina\EventSerializer;
 use Mongolina\EventStreamIterator;
 use Mongolina\MongoAggregateAllEventStreamFactory;
 use Mongolina\MongoAllEventByClassesStreamFactory;
 use Mongolina\MongoEventStore;
-use Gica\Lib\ObjectToArrayConverter;
-use Gica\Types\Guid;
 use tests\Dudulina\MongoTestHelper;
 
-class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
+class MongoEventStoreReadEventsTest extends \PHPUnit_Framework_TestCase
 {
     const AGGREGATE_CLASS = 'aggClass';
     /** @var \MongoDB\Collection */
@@ -32,7 +31,7 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
     }
 
-    public function test_appendEventsForAggregate()
+    public function test_loadEventsByClassNames()
     {
         $eventStore = $this->factoryEventStore();
 
@@ -48,16 +47,41 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
 
         $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
 
-        $this->assertCount(1, $this->collection->find()->toArray());
+        $stream = $eventStore->loadEventsByClassNames([]);
 
-        $stream = $eventStore->loadEventsForAggregate($this->factoryAggregateDescriptor());
-
-        $events = iterator_to_array($stream->getIterator());
+        $events = iterator_to_array($stream->getIterator(), false);
 
         $this->assertCount(2, $events);
 
         $this->assertInstanceOf(Event1::class, $events[0]->getEvent());
         $this->assertInstanceOf(Event2::class, $events[1]->getEvent());
+    }
+
+    public function test_loadEventsByClassNamesFiltered()
+    {
+        $eventStore = $this->factoryEventStore();
+
+        $eventStore->dropStore();
+        $eventStore->createStore();
+
+        $aggregateId = 123;
+        $aggregateClass = self::AGGREGATE_CLASS;
+
+        $expectedEventStream = $eventStore->loadEventsForAggregate($this->factoryAggregateDescriptor());
+
+        $events = $this->wrapEventsWithMetadata($aggregateClass, $aggregateId, [new Event1(11), new Event2(22)]);
+
+        $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
+
+        $stream = $eventStore->loadEventsByClassNames([
+            \tests\Dudulina\EventStore\Mongo\MongoEventStoreReadEventsTest\Event1::class
+        ]);
+
+        $events = iterator_to_array($stream->getIterator(), false);
+
+        $this->assertCount(1, $events);
+
+        $this->assertInstanceOf(Event1::class, $events[0]->getEvent());
     }
 
     private function factoryAggregateDescriptor(): AggregateDescriptor
@@ -110,23 +134,24 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
     {
         return new MongoEventStore(
             $this->collection,
-            new EventSerializer(),
-            new ObjectToArrayConverter(),
-            new EventFromCommitExtractor(
-                new EventSerializer(),
-                new DocumentParser()
-            ),
             new MongoAggregateAllEventStreamFactory(
                 new EventStreamIterator(
-                    new EventSerializer(),
-                    new DocumentParser()
+                    $this->factoryCommitSerializer()
                 )
             ),
             new MongoAllEventByClassesStreamFactory(
-                new EventSerializer(),
-                new DocumentParser()
+                $this->factoryCommitSerializer()
+            ),
+            $this->factoryCommitSerializer()
+        );
+    }
 
-            ));
+    private function factoryCommitSerializer(): CommitSerializer
+    {
+        return new CommitSerializer(
+            new EventSerializer(),
+            new ObjectToArrayConverter()
+        );
     }
 }
 

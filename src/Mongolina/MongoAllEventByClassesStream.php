@@ -6,25 +6,19 @@
 namespace Mongolina;
 
 
-use Dudulina\Event\EventWithMetaData;
-use Dudulina\EventStore\EventsCommit;
-use Dudulina\EventStore\EventStreamGroupedByCommit;
-use Gica\Iterator\IteratorTransformer\IteratorExpander;
+use Dudulina\EventStore\EventStream;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
+use Mongolina\EventsCommit\CommitSerializer;
 
-class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
+class MongoAllEventByClassesStream implements EventStream
 {
 
     /**
      * @var Collection
      */
     private $collection;
-    /**
-     * @var EventSerializer
-     */
-    private $eventSerializer;
     /**
      * @var array
      */
@@ -41,21 +35,19 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
 
     private $ascending = true;
     /**
-     * @var DocumentParser
+     * @var \Mongolina\EventsCommit\CommitSerializer
      */
-    private $documentParser;
+    private $commitSerializer;
 
     public function __construct(
         Collection $collection,
         array $eventClassNames,
-        EventSerializer $eventSerializer,
-        DocumentParser $documentParser
+        CommitSerializer $commitSerializer
     )
     {
         $this->collection = $collection;
-        $this->eventSerializer = $eventSerializer;
         $this->eventClassNames = $eventClassNames;
-        $this->documentParser = $documentParser;
+        $this->commitSerializer = $commitSerializer;
     }
 
     /**
@@ -94,15 +86,15 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
      */
     public function getIterator()
     {
-        return $this->extractEventsFromCommits($this->fetchCommits());
+        return $this->getIteratorForEvents($this->getCursorForEvents());
     }
 
     public function fetchCommits()
     {
-        return $this->getIteratorForCommits($this->getCursor());
+        return $this->getIteratorForCommits($this->getCursorForCommits());
     }
 
-    private function getCursor(): Cursor
+    private function getCursorForCommits(): Cursor
     {
         $options = [
             'sort'            => [
@@ -121,17 +113,18 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
         );
     }
 
-    /**
-     * @param EventsCommit[] $commits
-     * @return EventWithMetaData[]|\Iterator
-     */
-    private function extractEventsFromCommits($commits)
+    private function getCursorForEvents(): \Traversable
     {
-        return (new IteratorExpander(function (EventsCommit $commit) {
-            foreach ($commit->getEventsWithMetadata() as $eventWithMetaData) {
-                yield $eventWithMetaData;
-            }
-        }))->__invoke($commits);
+        $pipeline = $this->getEventsPipeline();
+
+        $options = [
+            'noCursorTimeout' => true,
+        ];
+
+        return $this->collection->aggregate(
+            $pipeline,
+            $options
+        );
     }
 
     private function getFilter(): array
@@ -162,25 +155,66 @@ class MongoAllEventByClassesStream implements EventStreamGroupedByCommit
     private function getIteratorForCommits($cursor): \Traversable
     {
         return (new IteratorMapper(function ($document) {
-            $metaData = $this->documentParser->extractMetaDataFromDocument($document);
-            $sequence = $this->documentParser->extractSequenceFromDocument($document);
-            $version = $this->documentParser->extractVersionFromDocument($document);
-
-            $events = [];
-
-            foreach ($document['events'] as $index => $eventSubDocument) {
-                $event = $this->eventSerializer->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
-
-                $eventWithMetaData = new EventWithMetaData($event, $metaData->withEventId($eventSubDocument['id']));
-
-                $events[] = $eventWithMetaData->withSequenceAndIndex($sequence, $index);
-            }
-
-            return new EventsCommit(
-                $sequence,
-                $version,
-                $events
-            );
+            return $this->commitSerializer->fromDocument($document);
         }))($cursor);
+    }
+
+    private function getIteratorForEvents($documents): \Traversable
+    {
+        return (new IteratorMapper(function ($document) {
+            return $this->commitSerializer->extractEventFromSubDocument($document['events'], $document);
+        }))($documents);
+    }
+
+    private function getEventsPipeline(): array
+    {
+        $pipeline = [];
+
+        if ($this->getFilter()) {
+            $pipeline[] = [
+                '$match' => $this->getFilter(),
+            ];
+        }
+
+        $pipeline[] = [
+            '$unwind' => '$events',
+        ];
+
+        if ($this->getFilter()) {
+            $pipeline[] = [
+                '$match' => $this->getFilter(),
+            ];
+        }
+
+        $pipeline[] = [
+            '$sort' => [
+                MongoEventStore::TS => $this->ascending ? 1 : -1,
+            ],
+        ];
+
+        if ($this->limit > 0) {
+            $pipeline[] = [
+                '$limit' => $this->limit,
+            ];
+        }
+        return $pipeline;
+    }
+
+    public function count()
+    {
+        $pipeline = $this->getEventsPipeline();
+
+        $pipeline[] = [
+            '$count' => 'total',
+        ];
+
+        $options = [
+            'noCursorTimeout' => true,
+        ];
+
+        return $this->collection->aggregate(
+            $pipeline,
+            $options
+        )['total'];
     }
 }

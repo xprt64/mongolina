@@ -18,14 +18,9 @@ class MongoAggregateAllEventStream implements AggregateEventStream
      * @var Collection
      */
     private $collection;
-    private $aggregateId;
 
     /** @var int */
     private $version;
-    /**
-     * @var string
-     */
-    private $aggregateClass;
 
     /** @var  int */
     private $sequence;
@@ -83,7 +78,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
             ],
             [
                 'sort' => [
-                    'sequence' => 1,
+                    'ts' => 1,
                 ],
             ]
         );
@@ -92,5 +87,27 @@ class MongoAggregateAllEventStream implements AggregateEventStream
     public function getSequence(): int
     {
         return $this->sequence;
+    }
+
+    public function count()
+    {
+        $pipeline = [];
+
+        $pipeline[] = [
+            '$match' => [
+                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor)),
+                'version'    => [
+                    '$lte' => $this->version,
+                ],
+            ],
+        ];
+
+        $pipeline[] = [
+            '$count' => 'total',
+        ];
+
+        return $this->collection->aggregate(
+            $pipeline
+        )['total'];
     }
 }
