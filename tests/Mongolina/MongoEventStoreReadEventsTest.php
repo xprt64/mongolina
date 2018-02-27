@@ -77,6 +77,8 @@ class MongoEventStoreReadEventsTest extends \PHPUnit_Framework_TestCase
             \tests\Dudulina\EventStore\Mongo\MongoEventStoreReadEventsTest\Event1::class
         ]);
 
+        $this->assertSame(1, count($stream));
+
         $events = iterator_to_array($stream->getIterator(), false);
 
         $this->assertCount(1, $events);

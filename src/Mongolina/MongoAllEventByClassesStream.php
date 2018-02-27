@@ -177,6 +177,12 @@ class MongoAllEventByClassesStream implements EventStream
         }
 
         $pipeline[] = [
+            '$sort' => [
+                MongoEventStore::TS => $this->ascending ? 1 : -1,
+            ],
+        ];
+
+        $pipeline[] = [
             '$unwind' => '$events',
         ];
 
@@ -185,12 +191,6 @@ class MongoAllEventByClassesStream implements EventStream
                 '$match' => $this->getFilter(),
             ];
         }
-
-        $pipeline[] = [
-            '$sort' => [
-                MongoEventStore::TS => $this->ascending ? 1 : -1,
-            ],
-        ];
 
         if ($this->limit > 0) {
             $pipeline[] = [
@@ -212,9 +212,9 @@ class MongoAllEventByClassesStream implements EventStream
             'noCursorTimeout' => true,
         ];
 
-        return $this->collection->aggregate(
+        return iterator_to_array($this->collection->aggregate(
             $pipeline,
             $options
-        )['total'];
+        ))[0]['total'];
     }
 }
