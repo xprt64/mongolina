@@ -10,6 +10,8 @@ require_once __DIR__ . '/MongoTestHelper.php';
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Gica\Serialize\ObjectSerializer\CompositeSerializer;
+use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Mongolina\EventsCommit\CommitSerializer;
 use Gica\Lib\ObjectToArrayConverter;
 use Gica\Types\Guid;
@@ -125,7 +127,9 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
     {
         return new CommitSerializer(
             new EventSerializer(),
-            new ObjectToArrayConverter()
+            new ObjectSerializer(
+                new CompositeSerializer([])
+            )
         );
     }
 }

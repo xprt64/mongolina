@@ -10,6 +10,8 @@ require_once __DIR__ . '/MongoTestHelper.php';
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Gica\Serialize\ObjectSerializer\CompositeSerializer;
+use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Mongolina\EventsCommit\CommitSerializer;
 use Gica\Lib\ObjectToArrayConverter;
 use Gica\Types\Guid;
@@ -74,7 +76,7 @@ class MongoEventStoreReadEventsTest extends \PHPUnit_Framework_TestCase
         $eventStore->appendEventsForAggregate($this->factoryAggregateDescriptor(), $events, $expectedEventStream);
 
         $stream = $eventStore->loadEventsByClassNames([
-            \tests\Dudulina\EventStore\Mongo\MongoEventStoreReadEventsTest\Event1::class
+            \tests\Dudulina\EventStore\Mongo\MongoEventStoreReadEventsTest\Event1::class,
         ]);
 
         $this->assertSame(1, count($stream));
@@ -152,7 +154,9 @@ class MongoEventStoreReadEventsTest extends \PHPUnit_Framework_TestCase
     {
         return new CommitSerializer(
             new EventSerializer(),
-            new ObjectToArrayConverter()
+            new ObjectSerializer(
+                new CompositeSerializer([])
+            )
         );
     }
 }

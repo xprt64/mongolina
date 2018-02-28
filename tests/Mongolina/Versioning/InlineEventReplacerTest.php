@@ -10,6 +10,8 @@ require_once __DIR__ . '/../MongoTestHelper.php';
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Gica\Serialize\ObjectSerializer\CompositeSerializer;
+use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Mongolina\Versioning\InlineEventReplacer;
 use Mongolina\EventsCommit\CommitSerializer;
 use Gica\Lib\ObjectToArrayConverter;
@@ -49,10 +51,7 @@ class InlineEventReplacerTest extends \PHPUnit_Framework_TestCase
 
         $sut = new InlineEventReplacer(
             $this->collection,
-            new CommitSerializer(
-                new EventSerializer(),
-                new ObjectToArrayConverter()
-            )
+            $this->factoryCommitSerializer()
         );
 
         $sut->replaceEvent(new class implements EventReplacer
@@ -135,7 +134,9 @@ class InlineEventReplacerTest extends \PHPUnit_Framework_TestCase
     {
         return new CommitSerializer(
             new EventSerializer(),
-            new ObjectToArrayConverter()
+            new ObjectSerializer(
+                new CompositeSerializer([])
+            )
         );
     }
 }

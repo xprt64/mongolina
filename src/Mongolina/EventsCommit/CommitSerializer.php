@@ -9,7 +9,7 @@ namespace Mongolina\EventsCommit;
 use Dudulina\Command\CommandMetadata;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
-use Gica\Lib\ObjectToArrayConverter;
+use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Gica\Types\Guid;
 use Mongolina\EventsCommit;
 use Mongolina\EventSerializer;
@@ -22,17 +22,17 @@ class CommitSerializer
      */
     private $eventSerializer;
     /**
-     * @var ObjectToArrayConverter
+     * @var ObjectSerializer
      */
-    private $objectToArrayConverter;
+    private $objectSerializer;
 
     public function __construct(
         EventSerializer $eventSerializer,
-        ObjectToArrayConverter $objectToArrayConverter
+        ObjectSerializer $objectSerializer
     )
     {
         $this->eventSerializer = $eventSerializer;
-        $this->objectToArrayConverter = $objectToArrayConverter;
+        $this->objectSerializer = $objectSerializer;
     }
 
     public function fromDocument($document): EventsCommit
@@ -106,7 +106,7 @@ class CommitSerializer
             'sequence'            => $commit->getSequence(),
             'createdAt'           => $commit->getCreatedAt(),
             'authenticatedUserId' => $commit->getAuthenticatedUserId(),
-            'commandMeta'         => $this->objectToArrayConverter->convert($commit->getCommandMeta()),
+            'commandMeta'         => $this->objectSerializer->convert($commit->getCommandMeta()),
             'events'              => $this->packEvents($commit->getEventsWithMetadata()),
         ];
     }
@@ -134,7 +134,7 @@ class CommitSerializer
         return [
             MongoEventStore::EVENT_CLASS => \get_class($eventWithMetaData->getEvent()),
             'payload'                    => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
-            'dump'                       => $this->objectToArrayConverter->convert($eventWithMetaData->getEvent()),
+            'dump'                       => $this->objectSerializer->convert($eventWithMetaData->getEvent()),
             'id'                         => $eventWithMetaData->getMetaData()->getEventId(),
         ];
     }
