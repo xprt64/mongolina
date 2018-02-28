@@ -28,10 +28,10 @@ class MongoAllEventByClassesStream implements EventStream
     /** @var int|null */
     private $limit = null;
 
-    /** @var int|null */
+    /** @var Timestamp|null */
     private $afterTimestamp;
 
-    /** @var int|null */
+    /** @var Timestamp|null */
     private $beforeTimestamp;
 
     private $ascending = true;
@@ -65,7 +65,7 @@ class MongoAllEventByClassesStream implements EventStream
         $this->ascending = true;
     }
 
-    public function beforeSequence(Timestamp $timestamp)
+    public function beforeTimestamp(Timestamp $timestamp)
     {
         $this->beforeTimestamp = $timestamp;
         $this->ascending = false;
@@ -84,6 +84,9 @@ class MongoAllEventByClassesStream implements EventStream
         return $this->getIteratorForEvents($this->getCursorForEvents());
     }
 
+    /**
+     * @return \Traversable|EventsCommit[]
+     */
     public function fetchCommits()
     {
         return $this->getIteratorForCommits($this->getCursorForCommits());
