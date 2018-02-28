@@ -12,19 +12,18 @@ use Dudulina\EventStore;
 use Dudulina\EventStore\AggregateEventStream;
 use Dudulina\EventStore\EventStream;
 use Dudulina\EventStore\Exception\ConcurrentModificationException;
-use Mongolina\EventsCommit\CommitSerializer;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 use MongoDB\Driver\Exception\BulkWriteException;
+use Mongolina\EventsCommit\CommitSerializer;
 
 class MongoEventStore implements EventStore
 {
     const EVENTS_EVENT_CLASS = 'events.eventClass';
     const EVENTS             = 'events';
     const EVENT_CLASS        = 'eventClass';
-    const SEQUENCE           = 'sequence';
     const TS                 = 'ts';
     const PAYLOAD            = 'payload';
     const DUMP               = 'dump';
@@ -65,8 +64,6 @@ class MongoEventStore implements EventStore
     public function createStore()
     {
         $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
-        $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::SEQUENCE => 1]);
-        $this->collection->createIndex([self::SEQUENCE => 1]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::TS => 1]);
         $this->collection->createIndex([self::TS => 1]);
         $this->collection->createIndex(['events.id' => 1]);
@@ -98,7 +95,6 @@ class MongoEventStore implements EventStore
                         $aggregateDescriptor->getAggregateClass(),
                         1 + $expectedEventStream->getVersion(),
                         new Timestamp(0, 0),
-                        1 + $expectedEventStream->getSequence(),
                         new UTCDateTime(microtime(true) * 1000),
                         $authenticatedUserId ? (string)$authenticatedUserId : null,
                         $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
@@ -128,11 +124,6 @@ class MongoEventStore implements EventStore
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
         return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
-    }
-
-    public function fetchLatestSequence(): int
-    {
-        return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
     }
 
     public function factoryStreamName(string $aggregateClass, $aggregateId)

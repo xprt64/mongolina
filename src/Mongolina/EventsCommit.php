@@ -28,9 +28,6 @@ class EventsCommit
     /** @var Timestamp */
     private $ts;
 
-    /** @var int */
-    private $sequence;
-
     /** @var UTCDateTime */
     private $createdAt;
 
@@ -49,7 +46,6 @@ class EventsCommit
         string $aggregateClass,
         int $version,
         Timestamp $ts,
-        int $sequence,
         UTCDateTime $createdAt,
         ?string $authenticatedUserId,
         ?CommandMetadata $commandMeta,
@@ -60,81 +56,48 @@ class EventsCommit
         $this->aggregateClass = $aggregateClass;
         $this->version = $version;
         $this->ts = $ts;
-        $this->sequence = $sequence;
         $this->createdAt = $createdAt;
         $this->authenticatedUserId = $authenticatedUserId;
         $this->commandMeta = $commandMeta;
         $this->eventsWithMetadata = $eventsWithMetadata;
     }
 
-    /**
-     * @return ObjectID
-     */
     public function getStreamName(): ObjectID
     {
         return $this->streamName;
     }
 
-    /**
-     * @return string
-     */
     public function getAggregateId(): string
     {
         return $this->aggregateId;
     }
 
-    /**
-     * @return string
-     */
     public function getAggregateClass(): string
     {
         return $this->aggregateClass;
     }
 
-    /**
-     * @return int
-     */
     public function getVersion(): int
     {
         return $this->version;
     }
 
-    /**
-     * @return Timestamp
-     */
     public function getTs(): Timestamp
     {
         return $this->ts;
     }
 
-    /**
-     * @return int
-     */
-    public function getSequence(): int
-    {
-        return $this->sequence;
-    }
-
-    /**
-     * @return UTCDateTime
-     */
     public function getCreatedAt(): UTCDateTime
     {
         return $this->createdAt;
     }
 
-    /**
-     * @return null|string
-     */
-    public function getAuthenticatedUserId()
+    public function getAuthenticatedUserId():?string
     {
         return $this->authenticatedUserId;
     }
 
-    /**
-     * @return CommandMetadata|null
-     */
-    public function getCommandMeta()
+    public function getCommandMeta():?CommandMetadata
     {
         return $this->commandMeta;
     }
@@ -146,6 +109,4 @@ class EventsCommit
     {
         return $this->eventsWithMetadata;
     }
-
-
 }

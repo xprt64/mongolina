@@ -14,23 +14,16 @@ use MongoDB\Driver\Cursor;
 
 class MongoAggregateAllEventStream implements AggregateEventStream
 {
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     private $collection;
 
     /** @var int */
     private $version;
 
-    /** @var  int */
-    private $sequence;
-    /**
-     * @var EventStreamIterator
-     */
+    /** @var EventStreamIterator */
     private $eventStreamIterator;
-    /**
-     * @var AggregateDescriptor
-     */
+
+    /** @var AggregateDescriptor */
     private $aggregateDescriptor;
 
     public function __construct(
@@ -41,7 +34,6 @@ class MongoAggregateAllEventStream implements AggregateEventStream
     {
         $this->collection = $collection;
         $this->version = $this->fetchLatestVersion($aggregateDescriptor);
-        $this->sequence = $this->fetchLatestSequence();
         $this->eventStreamIterator = $eventStreamIterator;
         $this->aggregateDescriptor = $aggregateDescriptor;
     }
@@ -62,11 +54,6 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
     }
 
-    private function fetchLatestSequence(): int
-    {
-        return (new LastAggregateSequenceFetcher())->fetchLatestSequence($this->collection);
-    }
-
     private function getCursorLessThanOrEqualToVersion(AggregateDescriptor $aggregateDescriptor): Cursor
     {
         return $this->collection->find(
@@ -82,11 +69,6 @@ class MongoAggregateAllEventStream implements AggregateEventStream
                 ],
             ]
         );
-    }
-
-    public function getSequence(): int
-    {
-        return $this->sequence;
     }
 
     public function count()

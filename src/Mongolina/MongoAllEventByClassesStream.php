@@ -8,6 +8,7 @@ namespace Mongolina;
 
 use Dudulina\EventStore\EventStream;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
+use MongoDB\BSON\Timestamp;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
 use Mongolina\EventsCommit\CommitSerializer;
@@ -28,10 +29,10 @@ class MongoAllEventByClassesStream implements EventStream
     private $limit = null;
 
     /** @var int|null */
-    private $afterSequence;
+    private $afterTimestamp;
 
     /** @var int|null */
-    private $beforeSequence;
+    private $beforeTimestamp;
 
     private $ascending = true;
     /**
@@ -58,21 +59,15 @@ class MongoAllEventByClassesStream implements EventStream
         $this->limit = $limit;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function afterSequence(int $afterSequence)
+    public function afterTimestamp(Timestamp $timestamp)
     {
-        $this->afterSequence = $afterSequence;
+        $this->afterTimestamp = $timestamp;
         $this->ascending = true;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function beforeSequence(int $beforeSequence)
+    public function beforeSequence(Timestamp $timestamp)
     {
-        $this->beforeSequence = $beforeSequence;
+        $this->beforeTimestamp = $timestamp;
         $this->ascending = false;
     }
 
@@ -98,7 +93,7 @@ class MongoAllEventByClassesStream implements EventStream
     {
         $options = [
             'sort'            => [
-                MongoEventStore::SEQUENCE => $this->ascending ? 1 : -1,
+                MongoEventStore::TS => $this->ascending ? 1 : -1,
             ],
             'noCursorTimeout' => true,
         ];
@@ -137,15 +132,15 @@ class MongoAllEventByClassesStream implements EventStream
             ];
         }
 
-        if ($this->afterSequence !== null) {
-            $filter[MongoEventStore::SEQUENCE] = [
-                '$gt' => $this->afterSequence,
+        if ($this->afterTimestamp !== null) {
+            $filter[MongoEventStore::TS] = [
+                '$gt' => $this->afterTimestamp,
             ];
         }
 
-        if ($this->beforeSequence !== null) {
-            $filter[MongoEventStore::SEQUENCE] = [
-                '$lt' => $this->beforeSequence,
+        if ($this->beforeTimestamp !== null) {
+            $filter[MongoEventStore::TS] = [
+                '$lt' => $this->beforeTimestamp,
             ];
         }
 
