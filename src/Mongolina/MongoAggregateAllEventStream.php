@@ -78,7 +78,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
             ],
             [
                 'sort' => [
-                    'ts' => 1,
+                    'version' => 1,
                 ],
             ]
         );
