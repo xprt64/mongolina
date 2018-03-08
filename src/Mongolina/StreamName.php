@@ -7,16 +7,12 @@ namespace Mongolina;
 
 
 use Dudulina\Aggregate\AggregateDescriptor;
+use MongoDB\BSON\ObjectID;
 
 class StreamName
 {
-    public static function factoryStreamName(string $aggregateClass, $aggregateId)
+    public static function factoryStreamNameFromDescriptor(AggregateDescriptor $aggregateDescriptor): ObjectID
     {
-        return self::factoryStreamNameFromDescriptor(new AggregateDescriptor($aggregateId, $aggregateClass));
-    }
-
-    public static function factoryStreamNameFromDescriptor(AggregateDescriptor $aggregateDescriptor)
-    {
-        return substr(hash('sha256', $aggregateDescriptor->getAggregateClass() . $aggregateDescriptor->getAggregateId()), 0, 24);
+        return new ObjectID(substr(hash('sha256', $aggregateDescriptor->getAggregateClass() . $aggregateDescriptor->getAggregateId()), 0, 24));
     }
 }

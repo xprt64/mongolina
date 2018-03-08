@@ -58,7 +58,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
     {
         return $this->collection->find(
             [
-                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor)),
+                'streamName' => StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
                 'version'    => [
                     '$lte' => $this->version,
                 ],
@@ -77,7 +77,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
         $pipeline[] = [
             '$match' => [
-                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor)),
+                'streamName' => StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor),
                 'version'    => [
                     '$lte' => $this->version,
                 ],

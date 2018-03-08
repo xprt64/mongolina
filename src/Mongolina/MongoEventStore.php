@@ -27,6 +27,7 @@ class MongoEventStore implements EventStore
     const TS                 = 'ts';
     const PAYLOAD            = 'payload';
     const DUMP               = 'dump';
+    const STREAM_NAME        = 'streamName';
 
     /** @var  Collection */
     protected $collection;
@@ -63,7 +64,7 @@ class MongoEventStore implements EventStore
 
     public function createStore()
     {
-        $this->collection->createIndex(['streamName' => 1, 'version' => 1], ['unique' => true]);
+        $this->collection->createIndex([self::STREAM_NAME => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::TS => 1]);
         $this->collection->createIndex([self::TS => 1]);
         $this->collection->createIndex(['events.id' => 1]);
@@ -90,7 +91,7 @@ class MongoEventStore implements EventStore
             $this->collection->insertOne(
                 $this->commitSerializer->toDocument(
                     new EventsCommit(
-                        new ObjectID($this->factoryStreamName($aggregateDescriptor->getAggregateClass(), $aggregateDescriptor->getAggregateId())),
+                        StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
                         (string)$aggregateDescriptor->getAggregateId(),
                         $aggregateDescriptor->getAggregateClass(),
                         1 + $expectedEventStream->getVersion(),
@@ -124,10 +125,5 @@ class MongoEventStore implements EventStore
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
         return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
-    }
-
-    public function factoryStreamName(string $aggregateClass, $aggregateId)
-    {
-        return StreamName::factoryStreamName($aggregateClass, $aggregateId);
     }
 }

@@ -16,7 +16,7 @@ class LastAggregateVersionFetcher
     {
         $cursor = $collection->find(
             [
-                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor)),
+                'streamName' => StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
             ],
             [
                 'sort'  => [
