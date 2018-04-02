@@ -111,7 +111,7 @@ class MongoAllEventByClassesStream implements EventStream
         );
     }
 
-    private function getCursorForEvents(): \Traversable
+    public function getCursorForEvents(): \Traversable
     {
         $pipeline = $this->getEventsPipeline(true);
 
