@@ -115,11 +115,17 @@ class MongoEventStore implements EventStore
 
     public function findEventById(string $eventId): ?EventWithMetaData
     {
+        $document = $this->fetchEventDocumentById($eventId);
+        return $document ? $this->commitSerializer->extractEventFromCommit($document, $eventId) : null;
+    }
+
+    public function fetchEventDocumentById(string $eventId)
+    {
         $document = $this->collection->findOne([
             'events.id' => $eventId,
         ]);
 
-        return $document ? $this->commitSerializer->extractEventFromCommit($document, $eventId) : null;
+        return $document;
     }
 
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
