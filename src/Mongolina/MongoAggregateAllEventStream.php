@@ -41,7 +41,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
     public function getIterator()
     {
         return $this->eventStreamIterator->getIteratorThatExtractsEventsFromDocument(
-            $this->getCursorLessThanOrEqualToVersion($this->aggregateDescriptor));
+            $this->getCursorLessThanOrEqualToVersion());
     }
 
     public function getVersion(): int
@@ -54,18 +54,13 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
     }
 
-    private function getCursorLessThanOrEqualToVersion(AggregateDescriptor $aggregateDescriptor): Cursor
-    {
-        return $this->getCursorLessThanOrEqualToSomeVersion(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $this->version);
-    }
-
-    private function getCursorLessThanOrEqualToSomeVersion(string $streamName, int $version): Cursor
+    private function getCursorLessThanOrEqualToVersion(): Cursor
     {
         return $this->collection->find(
             [
-                'streamName' => new ObjectID($streamName),
+                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor)),
                 'version'    => [
-                    '$lte' => $version,
+                    '$lte' => $this->version,
                 ],
             ],
             [
