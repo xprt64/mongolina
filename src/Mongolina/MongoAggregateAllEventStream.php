@@ -58,7 +58,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
     {
         return $this->collection->find(
             [
-                'streamName' => new ObjectID(StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor)),
+                'streamName' => StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor),
                 'version'    => [
                     '$lte' => $this->version,
                 ],
@@ -71,7 +71,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         );
     }
 
-    public function getCursorGreaterThanToSomeVersion(string $streamName, int $version, int $limit = null): Cursor
+    public function getCursorGreaterThanToSomeVersion(int $version, int $limit = null): Cursor
     {
         $options = [
             'sort' => [
@@ -85,7 +85,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
         return $this->collection->find(
             [
-                'streamName' => new ObjectID($streamName),
+                'streamName' => StreamName::factoryStreamNameFromDescriptor($this->aggregateDescriptor),
                 'version'    => [
                     '$gt' => $version,
                 ],
