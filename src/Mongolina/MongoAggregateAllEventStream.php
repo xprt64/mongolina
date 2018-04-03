@@ -56,9 +56,14 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
     private function getCursorLessThanOrEqualToVersion(AggregateDescriptor $aggregateDescriptor): Cursor
     {
+        return $this->getCursorLessThanOrEqualToCurrentVersion(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor));
+    }
+
+    public function getCursorLessThanOrEqualToCurrentVersion(string $streamName): Cursor
+    {
         return $this->collection->find(
             [
-                'streamName' => StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
+                'streamName' => new ObjectID($streamName),
                 'version'    => [
                     '$lte' => $this->version,
                 ],
