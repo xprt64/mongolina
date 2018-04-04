@@ -81,11 +81,13 @@ class CommitSerializer
             $document['authenticatedUserId']
         );
 
-        return (new EventWithMetaData(
+        return new EventWithMetaData(
             $this->unserializeEvent($eventSubDocument),
             $metaData
-                ->withEventId($eventSubDocument['id'])))
-            ->withVersion($document['version']);
+                ->withEventId($eventSubDocument['id'])
+                ->withVersion($document['version'])
+                ->withTimestamp($document['ts'])
+        );
     }
 
     private function unserializeEvent($eventSubDocument)

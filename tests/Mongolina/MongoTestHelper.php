@@ -9,6 +9,7 @@ namespace tests\Dudulina;
 use MongoDB\Client;
 use MongoDB\Collection;
 use MongoDB\Database;
+use MongoDB\Driver\Command;
 
 class MongoTestHelper
 {
@@ -30,7 +31,9 @@ class MongoTestHelper
         while (true) {
             try {
                 $retries++;
-                $database = (new Client('mongodb://db/'))
+                $client = new Client('mongodb://db/');
+
+                $database = $client
                     ->selectDatabase('test');
 
                 iterator_to_array($database->listCollections());
