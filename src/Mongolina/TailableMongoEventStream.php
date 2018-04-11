@@ -43,14 +43,16 @@ class TailableMongoEventStream implements TailableEventStream
     public function tail(callable $callback, $eventClasses = [], string $afterSequence = null): void
     {
         $collection = $this->mongoClient->local->selectCollection('oplog.rs');
+
+        $lastSequence = $afterSequence ? EventSequence::fromString($afterSequence) : null;
+
         while (true) {
             $query = [];
             if ($eventClasses) {
                 $query['o.' . MongoEventStore::EVENTS_EVENT_CLASS] = ['$in' => $eventClasses];
             }
-            if ($afterSequence) {
-                $sequence = EventSequence::fromString($afterSequence);
-                $query['ts'] = ['$gt' => $sequence->getTimestamp()];
+            if ($lastSequence) {
+                $query['ts'] = ['$gt' => $lastSequence->getTimestamp()];
             }
             $query['op'] = 'i';//operation = insert
             $query['ns'] = $this->eventStoreNamespace;//namespace = eventStoreDatabase.eventStoreCollection
@@ -64,8 +66,7 @@ class TailableMongoEventStream implements TailableEventStream
             while (true) {
                 if ($iterator->valid()) {
                     $doc = $iterator->current();
-                    $afterSequence = $doc['ts'];
-                    $this->processCommit($callback, $doc['o']);
+                    $lastSequence = $this->processCommit($callback, $doc['o'], $lastSequence);
                 }
                 $iterator->next();
             }
@@ -73,12 +74,17 @@ class TailableMongoEventStream implements TailableEventStream
         }
     }
 
-    private function processCommit(callable $callback, $document)
+    private function processCommit(callable $callback, $document, EventSequence $afterSequence = null)
     {
         foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubdocument) {
-            $callback(
-                $this->commitSerializer->extractEventFromSubDocument($eventSubdocument, $index, $document)
-            );
+            $eventWithMetaData = $this->commitSerializer->extractEventFromSubDocument($eventSubdocument, $index, $document);
+            $eventSequence = EventSequence::fromString($eventWithMetaData->getMetaData()->getSequence());
+
+            if ($afterSequence && $eventSequence->isAfter($afterSequence)) {
+                $callback($eventWithMetaData);
+            }
+            $afterSequence = $eventSequence;
         }
+        return $afterSequence;
     }
 }
