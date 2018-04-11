@@ -10,9 +10,8 @@ use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\EventStore;
 use Dudulina\EventStore\AggregateEventStream;
-use Dudulina\EventStore\EventStream;
 use Dudulina\EventStore\Exception\ConcurrentModificationException;
-use MongoDB\BSON\ObjectID;
+use Dudulina\EventStore\SeekableEventStream;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
@@ -108,7 +107,7 @@ class MongoEventStore implements EventStore
         }
     }
 
-    public function loadEventsByClassNames(array $eventClasses): EventStream
+    public function loadEventsByClassNames(array $eventClasses): SeekableEventStream
     {
         return $this->allEventByClassesStreamFactory->createStream($this->collection, $eventClasses);
     }
@@ -132,11 +131,11 @@ class MongoEventStore implements EventStore
     {
         $document = $this->fetchCommitDocumentByEventById($eventId);
 
-        foreach ($document['events'] as $eventSubDocument) {
+        foreach ($document[self::EVENTS] as $eventSubDocument) {
             if ($eventSubDocument['id'] !== $eventId) {
                 continue;
             }
-            $document['events'] = $eventSubDocument;
+            $document[self::EVENTS] = $eventSubDocument;
             return $document;
         }
         return null;

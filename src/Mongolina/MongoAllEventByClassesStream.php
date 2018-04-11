@@ -6,14 +6,15 @@
 namespace Mongolina;
 
 
-use Dudulina\EventStore\EventStream;
+use Dudulina\Event\EventWithMetaData;
+use Dudulina\EventStore\SeekableEventStream;
+use Gica\Iterator\IteratorTransformer\IteratorFilter;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
-use MongoDB\BSON\Timestamp;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
 use Mongolina\EventsCommit\CommitSerializer;
 
-class MongoAllEventByClassesStream implements EventStream
+class MongoAllEventByClassesStream implements SeekableEventStream
 {
 
     /**
@@ -28,17 +29,17 @@ class MongoAllEventByClassesStream implements EventStream
     /** @var int|null */
     private $limit = null;
 
-    /** @var Timestamp|null */
-    private $afterTimestamp;
-
-    /** @var Timestamp|null */
-    private $beforeTimestamp;
-
     private $ascending = true;
     /**
      * @var \Mongolina\EventsCommit\CommitSerializer
      */
     private $commitSerializer;
+
+    /** @var EventSequence|null */
+    private $afterSequence;
+
+    /** @var EventSequence|null */
+    private $beforeSequence;
 
     public function __construct(
         Collection $collection,
@@ -59,16 +60,19 @@ class MongoAllEventByClassesStream implements EventStream
         $this->limit = $limit;
     }
 
-    public function afterTimestamp(Timestamp $timestamp)
+    public function afterSequence(string $after)
     {
-        $this->afterTimestamp = $timestamp;
-        $this->ascending = true;
+        $this->afterSequence = EventSequence::fromString($after);
     }
 
-    public function beforeTimestamp(Timestamp $timestamp)
+    public function beforeSequence(string $before)
     {
-        $this->beforeTimestamp = $timestamp;
-        $this->ascending = false;
+        $this->beforeSequence = EventSequence::fromString($before);
+    }
+
+    public function sort(bool $chronological)
+    {
+        $this->ascending = $chronological;
     }
 
     public function countCommits(): int
@@ -135,15 +139,15 @@ class MongoAllEventByClassesStream implements EventStream
             ];
         }
 
-        if ($this->afterTimestamp !== null) {
+        if ($this->afterSequence !== null) {
             $filter[MongoEventStore::TS] = [
-                '$gt' => $this->afterTimestamp,
+                '$gt' => $this->afterSequence->getTimestamp(),
             ];
         }
 
-        if ($this->beforeTimestamp !== null) {
+        if ($this->beforeSequence !== null) {
             $filter[MongoEventStore::TS] = [
-                '$lt' => $this->beforeTimestamp,
+                '$lt' => $this->beforeSequence->getTimestamp(),
             ];
         }
 
@@ -159,9 +163,29 @@ class MongoAllEventByClassesStream implements EventStream
 
     private function getIteratorForEvents($documents): \Traversable
     {
-        return (new IteratorMapper(function ($document) {
-            return $this->commitSerializer->extractEventFromSubDocument($document['events'], $document);
+        $events = (new IteratorMapper(function ($document) {
+            return $this->commitSerializer->extractEventFromSubDocument($document['events'], $document['index'], $document);
         }))($documents);
+
+        if ($this->afterSequence) {
+            $filter = new IteratorFilter(function (EventWithMetaData $eventWithMetaData) {
+                /** @var EventSequence $eventSequence */
+                $eventSequence = $eventWithMetaData->getMetaData()->getSequence();
+                return $eventSequence->isAfter($this->afterSequence);
+            });
+            $events = $filter($events);
+        }
+
+        if ($this->beforeSequence) {
+            $filter = new IteratorFilter(function (EventWithMetaData $eventWithMetaData) {
+                /** @var EventSequence $eventSequence */
+                $eventSequence = $eventWithMetaData->getMetaData()->getSequence();
+                return $eventSequence->isBefore($this->beforeSequence);
+            });
+            $events = $filter($events);
+        }
+
+        return $events;
     }
 
     private function getEventsPipeline(bool $sorted = true): array
@@ -183,7 +207,10 @@ class MongoAllEventByClassesStream implements EventStream
         }
 
         $pipeline[] = [
-            '$unwind' => '$events',
+            '$unwind' => [
+                'path'              => '$events',
+                'includeArrayIndex' => 'index',
+            ],
         ];
 
         if ($this->getFilter()) {
@@ -217,4 +244,5 @@ class MongoAllEventByClassesStream implements EventStream
             $options
         ))[0]['total'];
     }
+
 }

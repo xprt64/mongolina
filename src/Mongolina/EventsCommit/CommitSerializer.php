@@ -11,7 +11,9 @@ use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
 use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Gica\Types\Guid;
+use MongoDB\BSON\Timestamp;
 use Mongolina\EventsCommit;
+use Mongolina\EventSequence;
 use Mongolina\EventSerializer;
 use Mongolina\MongoEventStore;
 
@@ -67,12 +69,12 @@ class CommitSerializer
 
     private function unpackEvents($document)
     {
-        return array_map(function ($eventSubDocument) use ($document) {
-            return $this->extractEventFromSubDocument($eventSubDocument, $document);
-        }, $document['events']);
+        return array_map(function ($index, $eventSubDocument) use ($document) {
+            return $this->extractEventFromSubDocument($eventSubDocument, $index, $document);
+        }, array_keys($document['events']), $document['events']);
     }
 
-    public function extractEventFromSubDocument($eventSubDocument, $document): EventWithMetaData
+    public function extractEventFromSubDocument($eventSubDocument, $index, $document): EventWithMetaData
     {
         $metaData = new MetaData(
             (string)$document['aggregateId'],
@@ -86,7 +88,7 @@ class CommitSerializer
             $metaData
                 ->withEventId($eventSubDocument['id'])
                 ->withVersion($document['version'])
-                ->withTimestamp($document['ts'])
+                ->withSequence(new EventSequence($document['ts'], $index))
         );
     }
 
@@ -118,12 +120,12 @@ class CommitSerializer
 
     public function extractEventFromCommit($document, string $eventId): ?EventWithMetaData
     {
-        foreach ($document['events'] as $eventSubDocument) {
+        foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
             if ($eventSubDocument['id'] !== $eventId) {
                 continue;
             }
 
-            return $this->extractEventFromSubDocument($eventSubDocument, $document);
+            return $this->extractEventFromSubDocument($eventSubDocument, $index, $document);
         }
 
         return null;
@@ -133,7 +135,7 @@ class CommitSerializer
     {
         return [
             MongoEventStore::EVENT_CLASS => \get_class($eventWithMetaData->getEvent()),
-            'payload'                    => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
+            MongoEventStore::PAYLOAD     => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'                       => $this->objectSerializer->convert($eventWithMetaData->getEvent()),
             'id'                         => $eventWithMetaData->getMetaData()->getEventId(),
         ];

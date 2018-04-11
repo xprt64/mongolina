@@ -38,7 +38,7 @@ class EventsCommit
     private $commandMeta;
 
     /** @var EventWithMetaData[] */
-    private $eventsWithMetadata = [];
+    private $eventsWithMetadata;
 
     public function __construct(
         ObjectID $streamName,

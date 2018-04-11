@@ -15,6 +15,6 @@ class EventSerializer
 
     public function deserializeEvent($eventClass, $eventPayload)
     {
-        return unserialize($eventPayload);
+        return \unserialize($eventPayload);
     }
 }

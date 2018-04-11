@@ -25,9 +25,9 @@ class EventStreamIterator
     public function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable
     {
         $expanderCallback = function ($document) {
-            foreach ($document['events'] as $eventSubDocument) {
+            foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
                 try {
-                    yield $this->commitSerializer->extractEventFromSubDocument($eventSubDocument, $document);
+                    yield $this->commitSerializer->extractEventFromSubDocument($eventSubDocument, $index, $document);
                 } catch (\Throwable $exception) {
                     var_dump($exception->getMessage());
                     var_dump($exception->getFile());

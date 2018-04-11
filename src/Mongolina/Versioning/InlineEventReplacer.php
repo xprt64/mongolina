@@ -51,11 +51,11 @@ class InlineEventReplacer
     {
         $commitUpdated = false;
 
-        foreach ($commit[MongoEventStore::EVENTS] as &$eventRow) {
+        foreach ($commit[MongoEventStore::EVENTS] as $index => &$eventRow) {
             if ($eventClass !== $eventRow[MongoEventStore::EVENT_CLASS]) {
                 continue;
             }
-            $oldEvent = $this->commitSerializer->extractEventFromSubDocument($eventRow, $commit);
+            $oldEvent = $this->commitSerializer->extractEventFromSubDocument($eventRow, $index, $commit);
             $newEvent = $replacer->replaceEvent($oldEvent);
             if ($oldEvent === $newEvent) {
                 continue;

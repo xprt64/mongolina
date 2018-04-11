@@ -7,6 +7,8 @@ namespace Mongolina;
 
 
 use Dudulina\EventStore\TailableEventStream;
+use MongoDB\Client;
+use MongoDB\Operation\Find;
 use Mongolina\EventsCommit\CommitSerializer;
 
 class TailableMongoEventStream implements TailableEventStream
@@ -16,7 +18,7 @@ class TailableMongoEventStream implements TailableEventStream
      */
     private $commitSerializer;
     /**
-     * @var \MongoDB\Client
+     * @var Client
      */
     private $mongoClient;
     /**
@@ -25,7 +27,7 @@ class TailableMongoEventStream implements TailableEventStream
     private $eventStoreNamespace;
 
     public function __construct(
-        \MongoDB\Client $mongoClient,
+        Client $mongoClient,
         CommitSerializer $commitSerializer,
         string $eventStoreNamespace = 'eventStore.eventStore'
     )
@@ -36,57 +38,46 @@ class TailableMongoEventStream implements TailableEventStream
     }
 
     /**
-     * @param callable $callback function(EventWithMetadata)
-     * @param string[] $eventClasses
-     * @param mixed|null $afterTimestamp
+     * @inheritdoc
      */
-    public function tail(callable $callback, $eventClasses = [], $afterTimestamp = null): void
+    public function tail(callable $callback, $eventClasses = [], string $afterSequence = null): void
     {
-        $collection = $this->mongoClient->local->selectCollection('oplog.rs');;
-
+        $collection = $this->mongoClient->local->selectCollection('oplog.rs');
         while (true) {
             $query = [];
-
             if ($eventClasses) {
-                $query['o.events.eventClass'] = ['$in' => $eventClasses];
+                $query['o.' . MongoEventStore::EVENTS_EVENT_CLASS] = ['$in' => $eventClasses];
             }
-
-            if ($afterTimestamp) {
-                $query['ts'] = ['$gt' => $afterTimestamp];
+            if ($afterSequence) {
+                $sequence = EventSequence::fromString($afterSequence);
+                $query['ts'] = ['$gt' => $sequence->getTimestamp()];
             }
-
-            $query['op'] = 'i';
-            $query['ns'] = $this->eventStoreNamespace;
-
+            $query['op'] = 'i';//operation = insert
+            $query['ns'] = $this->eventStoreNamespace;//namespace = eventStoreDatabase.eventStoreCollection
             $cursor = $collection->find($query, [
-                'cursorType'     => \MongoDB\Operation\Find::TAILABLE_AWAIT,
+                'cursorType'     => Find::TAILABLE_AWAIT,
                 'maxAwaitTimeMS' => 100,
                 'oplogReplay'    => true,
             ]);
-
             $iterator = new \IteratorIterator($cursor);
-
             $iterator->rewind();
-
             while (true) {
                 if ($iterator->valid()) {
                     $doc = $iterator->current();
-                    $afterTimestamp = $doc['ts'];
-                    $this->processCommit($callback, $doc["o"]);
+                    $afterSequence = $doc['ts'];
+                    $this->processCommit($callback, $doc['o']);
                 }
-
                 $iterator->next();
             }
-
             sleep(1);
         }
     }
 
     private function processCommit(callable $callback, $document)
     {
-        foreach ($document['events'] as $eventSubdocument) {
+        foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubdocument) {
             $callback(
-                $this->commitSerializer->extractEventFromSubDocument($eventSubdocument, $document)
+                $this->commitSerializer->extractEventFromSubDocument($eventSubdocument, $index, $document)
             );
         }
     }

@@ -7,7 +7,6 @@ namespace Mongolina;
 
 
 use Dudulina\Aggregate\AggregateDescriptor;
-use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
 
 class LastAggregateVersionFetcher

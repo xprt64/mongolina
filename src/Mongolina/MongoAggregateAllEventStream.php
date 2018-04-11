@@ -8,7 +8,6 @@ namespace Mongolina;
 
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\EventStore\AggregateEventStream;
-use MongoDB\BSON\ObjectID;
 use MongoDB\Collection;
 use MongoDB\Driver\Cursor;
 
