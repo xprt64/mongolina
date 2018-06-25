@@ -5,9 +5,7 @@
 
 declare(strict_types=1);
 
-
 namespace Mongolina;
-
 
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
