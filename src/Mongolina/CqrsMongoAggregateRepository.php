@@ -152,4 +152,19 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
     {
         return \call_user_func($this->factoryHydrator($aggregateClass), $document);
     }
+
+    public function loadEventsByClassNames(array $eventClasses): \Dudulina\EventStore\EventStream
+    {
+        return new CqrsAllEventByClassesStream($this->collection, $eventClasses, function ($document) {
+            return new EventWithMetaData(
+                $this->objectHydrator->hydrateObject($document['events']['@classes']['event'], $document['events']['event']),
+                $this->objectHydrator->hydrateObject($document['events']['@classes']['metaData'], $document['events']['metaData'])
+            );
+        });
+    }
+
+    public function create()
+    {
+        $this->collection->createIndex(['events.@classes.event' => 1]);
+    }
 }
