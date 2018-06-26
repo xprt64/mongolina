@@ -53,48 +53,53 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
     public function loadAggregate(AggregateDescriptor $aggregateDescriptor)
     {
         $document = $this->collection->findOne([
-            '_id' => new ObjectId((string)$aggregateDescriptor->getAggregateId()),
+            '_id' => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
         ]);
 
         $aggregateClass = $aggregateDescriptor->getAggregateClass();
         if ($document) {
-            $entity = \call_user_func($this->factoryHydrator($aggregateClass), $document);
+            $entity = $this->rehydrateAggregate($aggregateClass, $document);
             $version = $document['version'];
         } else {
             $entity = new $aggregateClass;
             $version = 0;
         }
 
-        $this->storeAggregateVersion($aggregateClass, $aggregateDescriptor->getAggregateId(), $version);
+        $this->storeAggregateVersion($aggregateDescriptor, $version);
         return $entity;
     }
 
-    private function storeAggregateVersion($aggregateClass, $aggregateId, int $version): void
+    private function storeAggregateVersion(AggregateDescriptor $aggregateDescriptor, int $version): void
     {
-        $this->aggregateVersion[$aggregateClass . '-' . $aggregateId] = $version;
+        $this->aggregateVersion[$aggregateDescriptor->getAggregateClass() . '-' . $aggregateDescriptor->getAggregateId()] = $version;
     }
 
-    private function getStoredAggregateVersion($aggregateClass, $aggregateId): int
+    private function getStoredAggregateVersion(AggregateDescriptor $aggregateDescriptor): int
     {
-        return $this->aggregateVersion[$aggregateClass . '-' . $aggregateId];
+        return $this->aggregateVersion[$aggregateDescriptor->getAggregateClass() . '-' . $aggregateDescriptor->getAggregateId()];
     }
 
     public function saveAggregate($aggregateId, $aggregate, $newEventsWithMeta)
     {
+        if (!$newEventsWithMeta) {
+            return [];
+        }
+        $aggregateDescriptor = new AggregateDescriptor($aggregateId, \get_class($aggregate));
+
         $serialized = $this->objectSerializer->convert($aggregate);
         unset($serialized['version']);
         try {
-            $version = $this->getStoredAggregateVersion(\get_class($aggregate), $aggregateId);
-            $newEventsWithMeta = array_map(function(EventWithMetaData $eventWithMetaData) use ($version){
+            $version = $this->getStoredAggregateVersion($aggregateDescriptor);
+            $newEventsWithMeta = array_map(function (EventWithMetaData $eventWithMetaData) use ($version) {
                 return $eventWithMetaData->withVersion($version + 1);
-            },$newEventsWithMeta);
+            }, $newEventsWithMeta);
             $result = $this->collection->updateOne(
                 [
-                    '_id'     => new ObjectID((string)$aggregateId),
+                    '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
                     'version' => $version,
                 ],
                 [
-                    '$set'  => ['entity' => $serialized],
+                    '$set'  => ['entity' => $serialized, 'aggregate' => ['id' => new ObjectId((string)$aggregateId), 'class' => $aggregateDescriptor->getAggregateClass()]],
                     '$inc'  => ['version' => 1],
                     '$push' => ['events' => ['$each' => $this->objectSerializer->convert($newEventsWithMeta)]],
                 ],
@@ -104,14 +109,16 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
             );
             $this->collection->updateOne(
                 [
-                    '_id'     => new ObjectID((string)$aggregateId),
+                    '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
                     'version' => $version + 1,
                 ],
                 [
-                    '$pull' => ['events' => [
-                        '@classes.event' => ['$in' => $this->getEventClasses($newEventsWithMeta)],
-                        'metaData.version' => ['$lte' => $version]
-                    ]],
+                    '$pull' => [
+                        'events' => [
+                            '@classes.event'   => ['$in' => $this->getEventClasses($newEventsWithMeta)],
+                            'metaData.version' => ['$lte' => $version],
+                        ],
+                    ],
                 ],
                 [
                     'upsert' => false,
@@ -139,5 +146,10 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
         return array_map(function (EventWithMetaData $eventWithMetaData) {
             return \get_class($eventWithMetaData->getEvent());
         }, $events);
+    }
+
+    private function rehydrateAggregate(string $aggregateClass, ?array $document)
+    {
+        return \call_user_func($this->factoryHydrator($aggregateClass), $document);
     }
 }
