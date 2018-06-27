@@ -12,6 +12,7 @@ use Dudulina\EventStore;
 use Dudulina\EventStore\AggregateEventStream;
 use Dudulina\EventStore\Exception\ConcurrentModificationException;
 use Dudulina\EventStore\SeekableEventStream;
+use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
@@ -20,13 +21,15 @@ use Mongolina\EventsCommit\CommitSerializer;
 
 class MongoEventStore implements EventStore
 {
-    const EVENTS_EVENT_CLASS = 'events.eventClass';
-    const EVENTS             = 'events';
-    const EVENT_CLASS        = 'eventClass';
-    const TS                 = 'ts';
-    const PAYLOAD            = 'payload';
-    const DUMP               = 'dump';
-    const STREAM_NAME        = 'streamName';
+    public const EVENTS_EVENT_CLASS = 'events.eventClass';
+    public const EVENTS             = 'events';
+    public const EVENT_CLASS = 'eventClass';
+    public const TS                 = 'ts';
+    public const PAYLOAD            = 'payload';
+    public const DUMP               = 'dump';
+    public const STREAM_NAME        = 'streamName';
+
+    public const ANNOTATION_FOR_COMPACT_EVENTS = '@compact';
 
     /** @var  Collection */
     protected $collection;
@@ -61,7 +64,7 @@ class MongoEventStore implements EventStore
         return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateDescriptor);
     }
 
-    public function createStore()
+    public function createStore():void
     {
         $this->collection->createIndex([self::STREAM_NAME => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::TS => 1]);
@@ -69,7 +72,7 @@ class MongoEventStore implements EventStore
         $this->collection->createIndex(['events.id' => 1]);
     }
 
-    public function dropStore()
+    public function dropStore():void
     {
         $this->collection->drop();
     }
@@ -79,14 +82,10 @@ class MongoEventStore implements EventStore
         if (!$eventsWithMetaData) {
             return;
         }
-
         /** @var MongoAggregateAllEventStream $expectedEventStream */
-
         $firstEventWithMetaData = reset($eventsWithMetaData);
-
         try {
             $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
-
             $this->collection->insertOne(
                 $this->commitSerializer->toDocument(
                     new EventsCommit(
@@ -102,9 +101,53 @@ class MongoEventStore implements EventStore
                     )
                 )
             );
+            $this->compactTheStream(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $expectedEventStream->getVersion(), $eventsWithMetaData);
         } catch (BulkWriteException $bulkWriteException) {
             throw new ConcurrentModificationException($bulkWriteException->getMessage());
         }
+    }
+
+    /**
+     * @param EventWithMetaData[] $events
+     * @return string[]
+     */
+    private function getCompactableEventClasses($events): array
+    {
+        $onlyCompactable = array_filter($events, function (EventWithMetaData $eventWithMetaData) {
+            $class = new \ReflectionClass($eventWithMetaData->getEvent());
+            return false !== stripos((string)$class->getDocComment(), self::ANNOTATION_FOR_COMPACT_EVENTS);
+        });
+        return array_map(function (EventWithMetaData $eventWithMetaData) {
+            return \get_class($eventWithMetaData->getEvent());
+        }, $onlyCompactable);
+    }
+
+    private function compactTheStream(ObjectId $streamName, int $beforeAndVersion, array $eventsWithMeta):void
+    {
+        $eventsToBeDeleted = $this->getCompactableEventClasses($eventsWithMeta);
+        if (!$eventsToBeDeleted) {
+            return;
+        }
+        $this->collection->updateMany(
+            [
+                'streamName' => $streamName,
+                'version'    => ['$lte' => $beforeAndVersion],
+            ],
+            [
+                '$pull' => [
+                    'events' => [
+                        'eventClass' => ['$in' => $eventsToBeDeleted],
+                    ],
+                ],
+
+            ]
+        );
+        $this->collection->deleteMany([
+                'streamName' => $streamName,
+                'version'    => ['$lte' => $beforeAndVersion],
+                'events'     => [],
+            ]
+        );
     }
 
     public function loadEventsByClassNames(array $eventClasses): SeekableEventStream
