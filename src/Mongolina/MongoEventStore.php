@@ -101,10 +101,10 @@ class MongoEventStore implements EventStore
                     )
                 )
             );
-            $this->compactTheStream(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $expectedEventStream->getVersion(), $eventsWithMetaData);
         } catch (BulkWriteException $bulkWriteException) {
             throw new ConcurrentModificationException($bulkWriteException->getMessage());
         }
+        $this->compactTheStream(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $expectedEventStream->getVersion(), $eventsWithMetaData);
     }
 
     /**
@@ -117,9 +117,9 @@ class MongoEventStore implements EventStore
             $class = new \ReflectionClass($eventWithMetaData->getEvent());
             return false !== stripos((string)$class->getDocComment(), self::ANNOTATION_FOR_COMPACT_EVENTS);
         });
-        return array_map(function (EventWithMetaData $eventWithMetaData) {
+        return array_values(array_map(function (EventWithMetaData $eventWithMetaData) {
             return \get_class($eventWithMetaData->getEvent());
-        }, $onlyCompactable);
+        }, $onlyCompactable));
     }
 
     private function compactTheStream(ObjectId $streamName, int $beforeAndVersion, array $eventsWithMeta):void
