@@ -12,12 +12,18 @@ require_once __DIR__ . '/../../MongoTestHelper.php';
 
 class StateManagerTest extends \PHPUnit_Framework_TestCase
 {
+    private const STATE_ID = 123;
+
     /** @var \MongoDB\Database */
     private $database;
+
+    /** @var \MongoDB\Database */
+    private $adminDatabase;
 
     protected function setUp()
     {
         $this->database = (new MongoTestHelper())->getDatabase();
+        $this->adminDatabase = (new MongoTestHelper())->getAdminDatabase();
 
         foreach ($this->database->listCollections() as $collection) {
             $this->database->dropCollection($collection->getName());
@@ -26,7 +32,7 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
 
     public function test_loadState()
     {
-        $sut = new StateManager($this->database);
+        $sut = new StateManager($this->database, $this->adminDatabase);
 
         $state = $sut->loadState(MyClass::class, 123);
 
@@ -35,7 +41,7 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
 
     public function test_updateState()
     {
-        $sut = new StateManager($this->database);
+        $sut = new StateManager($this->database, $this->adminDatabase);
 
         //first state update
         $sut->updateState(123, function (?MyClass $state) {
@@ -64,6 +70,25 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(1, $sut->debugGetVersionCountForState(MyClass::class, 123));
     }
 
+    public function test_moveStateToNamespace()
+    {
+        $sut = new StateManager($this->database, $this->adminDatabase);
+        $sourceNamespace = 'src';
+        $destinationNamespace = 'dst';
+        $storageName = 'test_namespace';
+        $sut->createStorage($storageName, $sourceNamespace);
+        $sut->createStorage($storageName, $destinationNamespace);
+
+        $updater = function (\stdClass $state = null) {
+            return 345;
+        };
+        $sut->updateState(self::STATE_ID, $updater, $storageName, $sourceNamespace);
+        $this->assertEquals(345, $sut->loadState(\stdClass::class, self::STATE_ID, $storageName, $sourceNamespace));
+        $this->assertNull($sut->loadState(\stdClass::class, self::STATE_ID, $storageName, $destinationNamespace));
+        $sut->moveEntireNamespace($sourceNamespace, $destinationNamespace);
+        $this->assertNull($sut->loadState(\stdClass::class, self::STATE_ID, $storageName, $sourceNamespace));
+        $this->assertEquals(345, $sut->loadState(\stdClass::class, self::STATE_ID, $storageName, $destinationNamespace));
+    }
 }
 
 class MyClass

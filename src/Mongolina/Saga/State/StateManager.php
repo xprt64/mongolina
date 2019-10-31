@@ -8,9 +8,14 @@ namespace Mongolina\Saga\State;
 
 use Dudulina\Saga\State\ProcessStateLoader;
 use Dudulina\Saga\State\ProcessStateUpdater;
+use InvalidArgumentException;
+use MongoDB\BSON\Regex;
 use MongoDB\Collection;
 use MongoDB\Database;
 use MongoDB\Driver\Exception\BulkWriteException;
+use ReflectionFunction;
+use function call_user_func;
+use function unserialize;
 
 /**
  * State manager; uses optimistic locking
@@ -22,29 +27,34 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
      * @var Database
      */
     private $database;
+    /**
+     * @var Database
+     */
+    private $adminDatabase;
 
     public function __construct(
-        Database $database
-    )
-    {
+        Database $database,
+        Database $adminDatabase
+    ) {
         $this->database = $database;
+        $this->adminDatabase = $adminDatabase;
     }
 
-    public function createStorage(string $namespace = 'global_namespace')
+    public function createStorage(string $storageName = 'global_namespace', string $namespace = '')
     {
-        $collection = $this->getCollection($namespace);
+        $collection = $this->getCollection($storageName, $namespace);
         $collection->createIndex(['stateClass' => 1, 'stateId' => 1,]);
         $collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
     }
 
-    public function loadState(string $stateClass, $stateId, string $namespace = 'global_namespace')
+    public function loadState(string $stateClass, $stateId, string $storageName = 'global_namespace', string $namespace = '')
     {
-        return $this->loadStateWithVersion($stateClass, $stateId, $version, $namespace);
+        return $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
     }
 
-    private function loadStateWithVersion(string $stateClass, $stateId, &$version, string $namespace)
+    private function loadStateWithVersion(string $stateClass, $stateId, &$version, string $storageName, string $namespace = '')
     {
-        $cursor = $this->getCollection($namespace)->find([
+        $cursor = $this->getCollection($storageName, $namespace)->find([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ], [
@@ -57,18 +67,18 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         if ($documents) {
             $document = reset($documents);
             $version = (int)$document['version'];
-            return \unserialize($document['payload']);
+            return unserialize($document['payload']);
         }
 
         $version = 0;
         return null;
     }
 
-    public function updateState($stateId, callable $updater, string $namespace = 'global_namespace')
+    public function updateState($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
         while (true) {
             try {
-                $this->tryUpdateState($stateId, $updater, $namespace);
+                $this->tryUpdateState($stateId, $updater, $storageName, $namespace);
                 break;
             } catch (BulkWriteException $bulkWriteException) {
                 continue;
@@ -78,10 +88,10 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function getStateClass(callable $update)
     {
-        $reflection = new \ReflectionFunction($update);
+        $reflection = new ReflectionFunction($update);
 
         if ($reflection->getNumberOfParameters() <= 0) {
-            throw new \InvalidArgumentException('Updater callback must have one type-hinted parameter');
+            throw new InvalidArgumentException('Updater callback must have one type-hinted parameter');
         }
 
         $parameter = $reflection->getParameters()[0];
@@ -89,57 +99,75 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         return [$parameter->getClass()->name, $parameter->isOptional()];
     }
 
-    private function tryUpdateState($stateId, callable $updater, string $namespace)
+    private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = '')
     {
         list($stateClass, $isOptional) = $this->getStateClass($updater);
 
-        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $namespace);
+        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
 
         if (0 === $version && !$isOptional) {
             $currentState = new $stateClass;
         }
 
-        $newState = \call_user_func($updater, $currentState);
+        $newState = call_user_func($updater, $currentState);
 
-        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $namespace);
+        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $storageName, $namespace);
     }
 
-    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded, string $namespace)
+    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded, string $storageName, string $namespace = '')
     {
-        $this->getCollection($namespace)->insertOne([
+        $this->getCollection($storageName, $namespace)->insertOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
             'payload'    => serialize($newState),
             'version'    => $versionWhenLoaded + 1,
         ]);
 
-        $this->getCollection($namespace)->deleteOne([
+        $this->getCollection($storageName, $namespace)->deleteOne([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
             'version'    => ['$lte' => $versionWhenLoaded],
         ]);
     }
 
-    public function debugGetVersionCountForState(string $stateClass, $stateId, string $namespace = 'global_namespace'): int
+    public function debugGetVersionCountForState(string $stateClass, $stateId, string $storageName = 'global_namespace', string $namespace = ''): int
     {
-        return $this->getCollection($namespace)->count([
+        return $this->getCollection($storageName, $namespace)->count([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ]);
     }
 
-    public function clearAllStates(string $namespace = 'global_namespace')
+    public function clearAllStates(string $storageName = 'global_namespace', string $namespace = '')
     {
-        $this->getCollection($namespace)->deleteMany([]);
+        $this->getCollection($storageName, $namespace)->deleteMany([]);
     }
 
-    private function getCollection(string $namespace): Collection
+    private function getCollection(string $storageName, string $namespace): Collection
     {
-        return $this->database->selectCollection($this->factoryCollectionName($namespace));
+        return $this->database->selectCollection($this->factoryCollectionName($storageName, $namespace));
     }
 
-    private function factoryCollectionName(string $namespace): string
+    private function factoryCollectionName(string $storageName, string $namespace): string
     {
-        return 'private_state_' . md5($namespace);
+        return $namespace . 'private_state_' . md5($storageName);
+    }
+
+    public function moveEntireNamespace(string $sourceNamespace, string $destinationNamespace)
+    {
+        $collections = $this->database->listCollections([
+            'filter' => [
+                'name' => new Regex('^' . preg_quote($sourceNamespace) . 'private_state_.*'),
+            ]
+        ]);
+        foreach ($collections as $collection) {
+            $old = $collection->getName();
+            $new = preg_replace('#^' . preg_quote($sourceNamespace) . 'private_state_#ims', $destinationNamespace . 'private_state_', $old);
+            $this->adminDatabase->command([
+                "renameCollection" => "{$this->database->getDatabaseName()}.{$old}",
+                "to"               => "{$this->database->getDatabaseName()}.{$new}",
+                'dropTarget'       => true,
+            ]);
+        }
     }
 }
