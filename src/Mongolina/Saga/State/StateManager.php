@@ -35,7 +35,8 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
     public function __construct(
         Database $database,
         Database $adminDatabase
-    ) {
+    )
+    {
         $this->database = $database;
         $this->adminDatabase = $adminDatabase;
     }
@@ -86,6 +87,18 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         }
     }
 
+    public function updateStateIfExists($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
+    {
+        while (true) {
+            try {
+                $this->tryUpdateStateIfExists($stateId, $updater, $storageName, $namespace);
+                break;
+            } catch (BulkWriteException $bulkWriteException) {
+                continue;
+            }
+        }
+    }
+
     private function getStateClass(callable $update)
     {
         $reflection = new ReflectionFunction($update);
@@ -111,6 +124,18 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
         $newState = call_user_func($updater, $currentState);
 
+        $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $storageName, $namespace);
+    }
+
+    private function tryUpdateStateIfExists($stateId, callable $updater, string $storageName, string $namespace = '')
+    {
+        list($stateClass, $isOptional) = $this->getStateClass($updater);
+
+        $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
+        if (null === $currentState) {
+            return;
+        }
+        $newState = call_user_func($updater, $currentState);
         $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $storageName, $namespace);
     }
 
@@ -151,14 +176,13 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
     private function factoryCollectionName(string $storageName, string $namespace): string
     {
         $md5 = md5($storageName);
-        if(false !== strpos($storageName, '\\')){
+        if (false !== strpos($storageName, '\\')) {
             $storageName = array_reverse(explode('\\', $storageName))[0];
-            if(strlen($storageName) > 20){
+            if (strlen($storageName) > 20) {
                 $storageName = substr($storageName, 0, 20);
             }
             $name = $storageName . '_' . substr($md5, 0, 4);
-        }
-        else{
+        } else {
             $name = $md5;
         }
 
