@@ -150,19 +150,31 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function factoryCollectionName(string $storageName, string $namespace): string
     {
-        return $namespace . 'private_state_' . md5($storageName);
+        $md5 = md5($storageName);
+        if(false !== strpos($storageName, '\\')){
+            $storageName = array_reverse(explode('\\', $storageName))[0];
+            if(strlen($storageName) > 20){
+                $storageName = substr($storageName, 0, 20);
+            }
+            $name = $storageName . '_' . substr($md5, 0, 4);
+        }
+        else{
+            $name = $md5;
+        }
+
+        return $namespace . '_ps_' . $name;
     }
 
     public function moveEntireNamespace(string $sourceNamespace, string $destinationNamespace)
     {
         $collections = $this->database->listCollections([
             'filter' => [
-                'name' => new Regex('^' . preg_quote($sourceNamespace) . 'private_state_.*'),
+                'name' => new Regex('^' . preg_quote($sourceNamespace) . '_ps_.*'),
             ]
         ]);
         foreach ($collections as $collection) {
             $old = $collection->getName();
-            $new = preg_replace('#^' . preg_quote($sourceNamespace) . 'private_state_#ims', $destinationNamespace . 'private_state_', $old);
+            $new = preg_replace('#^' . preg_quote($sourceNamespace) . '_ps_#ims', $destinationNamespace . '_ps_', $old);
             $this->adminDatabase->command([
                 "renameCollection" => "{$this->database->getDatabaseName()}.{$old}",
                 "to"               => "{$this->database->getDatabaseName()}.{$new}",
