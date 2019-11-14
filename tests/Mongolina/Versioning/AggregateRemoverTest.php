@@ -10,6 +10,8 @@ require_once __DIR__ . '/../MongoTestHelper.php';
 use Dudulina\Aggregate\AggregateDescriptor;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Gica\Serialize\ObjectHydrator\ObjectHydrator;
+use Gica\Serialize\ObjectHydrator\ObjectUnserializer\CompositeObjectUnserializer;
 use Gica\Serialize\ObjectSerializer\CompositeSerializer;
 use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Mongolina\Versioning\AggregateRemover;
@@ -135,6 +137,9 @@ class AggregateRemoverTest extends \PHPUnit_Framework_TestCase
             new EventSerializer(),
             new ObjectSerializer(
                 new CompositeSerializer([])
+            ),
+            new ObjectHydrator(
+                new CompositeObjectUnserializer([])
             )
         );
     }
