@@ -60,14 +60,14 @@ class MongoAllEventByClassesStream implements SeekableEventStream
         $this->limit = $limit;
     }
 
-    public function afterSequence(string $after)
+    public function afterSequence(\Dudulina\EventStore\EventSequence $after)
     {
-        $this->afterSequence = EventSequence::fromString($after);
+        $this->afterSequence = $after;
     }
 
-    public function beforeSequence(string $before)
+    public function beforeSequence(\Dudulina\EventStore\EventSequence $before)
     {
-        $this->beforeSequence = EventSequence::fromString($before);
+        $this->beforeSequence = $before;
     }
 
     public function sort(bool $chronological)

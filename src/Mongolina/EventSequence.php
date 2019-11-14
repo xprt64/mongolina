@@ -8,7 +8,7 @@ namespace Mongolina;
 
 use MongoDB\BSON\Timestamp;
 
-class EventSequence
+class EventSequence implements \Dudulina\EventStore\EventSequence
 {
 
     /**
