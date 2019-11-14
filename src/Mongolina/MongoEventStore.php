@@ -23,7 +23,7 @@ class MongoEventStore implements EventStore
 {
     public const EVENTS_EVENT_CLASS = 'events.eventClass';
     public const EVENTS             = 'events';
-    public const EVENT_CLASS = 'eventClass';
+    public const EVENT_CLASS        = 'eventClass';
     public const TS                 = 'ts';
     public const PAYLOAD            = 'payload';
     public const DUMP               = 'dump';
@@ -51,8 +51,7 @@ class MongoEventStore implements EventStore
         MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
         MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory,
         CommitSerializer $commitSerializer
-    )
-    {
+    ) {
         $this->collection = $collection;
         $this->aggregateEventStreamFactory = $aggregateEventStreamFactory;
         $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
@@ -64,7 +63,7 @@ class MongoEventStore implements EventStore
         return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateDescriptor);
     }
 
-    public function createStore():void
+    public function createStore(): void
     {
         $this->collection->createIndex([self::STREAM_NAME => 1, 'version' => 1], ['unique' => true]);
         $this->collection->createIndex([self::EVENTS_EVENT_CLASS => 1, self::TS => 1]);
@@ -72,7 +71,7 @@ class MongoEventStore implements EventStore
         $this->collection->createIndex(['events.id' => 1]);
     }
 
-    public function dropStore():void
+    public function dropStore(): void
     {
         $this->collection->drop();
     }
@@ -122,7 +121,7 @@ class MongoEventStore implements EventStore
         }, $onlyCompactable));
     }
 
-    private function compactTheStream(ObjectId $streamName, int $beforeAndVersion, array $eventsWithMeta):void
+    private function compactTheStream(ObjectId $streamName, int $beforeAndVersion, array $eventsWithMeta): void
     {
         $eventsToBeDeleted = $this->getCompactableEventClasses($eventsWithMeta);
         if (!$eventsToBeDeleted) {
@@ -187,5 +186,20 @@ class MongoEventStore implements EventStore
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
         return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
+    }
+
+    public function replaceEvent($eventId, callable $updater)
+    {
+        $document = $this->collection->findOne(['events.id' => $eventId]);
+        if (!$document) {
+            return;
+        }
+        foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
+            if ($eventSubDocument['id'] !== $eventId) {
+                continue;
+            }
+            $document[MongoEventStore::EVENTS][$index] = $updater($eventSubDocument);
+            break;
+        }
     }
 }
