@@ -201,5 +201,28 @@ class MongoEventStore implements EventStore
             $document[MongoEventStore::EVENTS][$index] = $updater($eventSubDocument);
             break;
         }
+        $this->collection->replaceOne(['events.id' => $eventId], $document);
+    }
+
+    public function deleteEvent($eventId)
+    {
+        $document = $this->collection->findOne(['events.id' => $eventId]);
+        if (!$document) {
+            return;
+        }
+        if(count($document[MongoEventStore::EVENTS]) === 1){
+            $this->collection->deleteOne(['events.id' => $eventId]);
+        }
+        else{
+            foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
+                if ($eventSubDocument['id'] !== $eventId) {
+                    continue;
+                }
+                unset($document[MongoEventStore::EVENTS][$index]);
+                break;
+            }
+            $document[MongoEventStore::EVENTS] = array_values($document[MongoEventStore::EVENTS]);
+            $this->collection->replaceOne(['events.id' => $eventId], $document);
+        }
     }
 }
