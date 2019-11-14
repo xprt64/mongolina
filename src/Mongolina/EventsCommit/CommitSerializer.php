@@ -9,6 +9,7 @@ namespace Mongolina\EventsCommit;
 use Dudulina\Command\CommandMetadata;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
+use Gica\Serialize\ObjectHydrator\ObjectHydrator;
 use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Gica\Types\Guid;
 use MongoDB\BSON\Timestamp;
@@ -27,12 +28,17 @@ class CommitSerializer
      * @var ObjectSerializer
      */
     private $objectSerializer;
+    /**
+     * @var ObjectHydrator
+     */
+    private $objectHydrator;
 
     public function __construct(
         EventSerializer $eventSerializer,
-        ObjectSerializer $objectSerializer
-    )
-    {
+        ObjectSerializer $objectSerializer,
+        ObjectHydrator $objectHydrator
+    ) {
+        $this->objectHydrator = $objectHydrator;
         $this->eventSerializer = $eventSerializer;
         $this->objectSerializer = $objectSerializer;
     }
@@ -94,8 +100,7 @@ class CommitSerializer
 
     private function unserializeEvent($eventSubDocument)
     {
-        return $this->eventSerializer
-            ->deserializeEvent($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['payload']);
+        return $this->objectHydrator->hydrateObject($eventSubDocument[MongoEventStore::EVENT_CLASS], $eventSubDocument['dump']);
     }
 
     public function toDocument(EventsCommit $commit): array
@@ -126,6 +131,19 @@ class CommitSerializer
             }
 
             return $this->extractEventFromSubDocument($eventSubDocument, $index, $document);
+        }
+
+        return null;
+    }
+
+    public function extractEventFromCommitHydrate($document, string $eventId): ?EventWithMetaData
+    {
+        foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
+            if ($eventSubDocument['id'] !== $eventId) {
+                continue;
+            }
+
+            return $this->extractEventFromSubDocumentHydrate($eventSubDocument, $index, $document);
         }
 
         return null;
