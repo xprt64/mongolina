@@ -75,7 +75,7 @@ class EventSequence implements \Dudulina\EventStore\EventSequence
     }
 
 
-    public function isBefore(self $other): bool
+    public function isBefore(\Dudulina\EventStore\EventSequence $other): bool
     {
         return $this->timestamp < $other->timestamp || ($this->timestamp === $other->timestamp && $this->indexInsideCommit < $other->indexInsideCommit);
     }
