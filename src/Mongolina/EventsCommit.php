@@ -5,7 +5,6 @@
 
 namespace Mongolina;
 
-use Dudulina\Command\CommandMetadata;
 use Dudulina\Event\EventWithMetaData;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\Timestamp;
@@ -34,7 +33,7 @@ class EventsCommit
     /** @var string|null */
     private $authenticatedUserId;
 
-    /** @var CommandMetadata|null */
+    /** @var mixed|null */
     private $commandMeta;
 
     /** @var EventWithMetaData[] */
@@ -48,7 +47,7 @@ class EventsCommit
         Timestamp $ts,
         UTCDateTime $createdAt,
         ?string $authenticatedUserId,
-        ?CommandMetadata $commandMeta,
+        $commandMeta,
         array $eventsWithMetadata)
     {
         $this->streamName = $streamName;
@@ -97,7 +96,7 @@ class EventsCommit
         return $this->authenticatedUserId;
     }
 
-    public function getCommandMeta():?CommandMetadata
+    public function getCommandMeta()
     {
         return $this->commandMeta;
     }

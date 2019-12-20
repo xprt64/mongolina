@@ -15,7 +15,7 @@ class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
 {
     use ScheduledCommandStoreTrait;
 
-    public function scheduleCommand(ScheduledCommand $scheduledCommand, AggregateDescriptor $aggregateDescriptor, CommandMetadata $commandMetadata = null)
+    public function scheduleCommand(ScheduledCommand $scheduledCommand, AggregateDescriptor $aggregateDescriptor, $commandMetadata = null)
     {
         $messageIdToMongoId = $this->messageIdToMongoId($scheduledCommand->getMessageId());
 

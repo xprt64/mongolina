@@ -6,13 +6,11 @@
 namespace Mongolina\EventsCommit;
 
 
-use Dudulina\Command\CommandMetadata;
 use Dudulina\Event\EventWithMetaData;
 use Dudulina\Event\MetaData;
 use Gica\Serialize\ObjectHydrator\ObjectHydrator;
 use Gica\Serialize\ObjectSerializer\ObjectSerializer;
 use Gica\Types\Guid;
-use MongoDB\BSON\Timestamp;
 use Mongolina\EventsCommit;
 use Mongolina\EventSequence;
 use Mongolina\EventSerializer;
@@ -58,19 +56,9 @@ class CommitSerializer
         );
     }
 
-    private function commandMetaFromDocument($document): CommandMetadata
+    private function commandMetaFromDocument($document)
     {
-        $commandMeta = new CommandMetadata();
-
-        if ($document['commandId']) {
-            $commandMeta = $commandMeta->withCommandId(Guid::fromString($document['commandId']));
-        }
-
-        if ($document['correlationId']) {
-            $commandMeta = $commandMeta->withCorrelationId(Guid::fromString($document['correlationId']));
-        }
-
-        return $commandMeta;
+        return json_decode($document, true);
     }
 
     private function unpackEvents($document)
@@ -113,7 +101,7 @@ class CommitSerializer
             'ts'                  => $commit->getTs(),
             'createdAt'           => $commit->getCreatedAt(),
             'authenticatedUserId' => $commit->getAuthenticatedUserId(),
-            'commandMeta'         => $this->objectSerializer->convert($commit->getCommandMeta()),
+            'commandMeta'         => json_encode($commit->getCommandMeta()),
             'events'              => $this->packEvents($commit->getEventsWithMetadata()),
         ];
     }

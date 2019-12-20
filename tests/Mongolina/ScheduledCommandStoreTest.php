@@ -49,7 +49,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
             ->willReturn('1234');
 
         /** @var ScheduledCommand $command */
-        $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
+        $commandMetadata = ['a' => 'b', 'c' => 1];
 
         $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
 

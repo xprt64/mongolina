@@ -1,25 +1,25 @@
-FROM php:7.1-cli
+FROM php:7.4-cli
 
 # Install dependencies
-RUN apt-get update
-RUN apt-get install  -y \
-        curl \
-        git \
+RUN apt-get update -q && \
+    apt-get install -y -q \
+        libpng-dev libxpm-dev \
+        libwebp-dev \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng-dev \
-        libcurl4-openssl-dev \
-        pkg-config \
-        libssl-dev \
-        libssh2-1-dev \
-        unixodbc \
-        tdsodbc \
-        freetds-dev
+        && \
+    docker-php-ext-configure gd \
+        --with-freetype \
+        --with-webp \
+        --with-jpeg \
+        --enable-gd && \
+    docker-php-ext-install -j$(nproc) gd
 
 RUN docker-php-ext-install -j$(nproc) gd
-RUN docker-php-ext-install -j$(nproc) mbstring
-RUN docker-php-ext-install -j$(nproc) zip
+RUN apt-get update -q && apt-get install -y -q libonig-dev && \
+    docker-php-ext-install -j$(nproc) mbstring
+
+RUN apt-get install -y -q libzip-dev && docker-php-ext-install -j$(nproc) zip
 
 RUN pecl install mongodb && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/20-mongodb.ini
 

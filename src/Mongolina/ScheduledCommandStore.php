@@ -12,7 +12,7 @@ class ScheduledCommandStore implements \Dudulina\Scheduling\ScheduledCommandStor
 {
     use ScheduledCommandStoreTrait;
 
-    public function loadAndProcessScheduledCommands(callable $eventProcessor/** function(ScheduledCommand $scheduledCommand, CommandMetadata $metadata = null) */)
+    public function loadAndProcessScheduledCommands(callable $eventProcessor/** function(ScheduledCommand $scheduledCommand, array $metadata = null) */)
     {
         while (($commandWithMetadata = $this->loadOneCommand())) {
             \call_user_func($eventProcessor, $commandWithMetadata->getScheduledCommand(), $commandWithMetadata->getCommandMetadata());

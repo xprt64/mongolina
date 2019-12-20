@@ -6,7 +6,6 @@
 namespace Mongolina\ScheduledCommand;
 
 
-use Dudulina\Command\CommandMetadata;
 use Dudulina\Scheduling\ScheduledCommand;
 
 class ScheduledCommandWithMetadata
@@ -17,13 +16,13 @@ class ScheduledCommandWithMetadata
      */
     private $scheduledCommand;
     /**
-     * @var CommandMetadata|null
+     * @var array|null
      */
     private $commandMetadata;
 
     public function __construct(
         ScheduledCommand $scheduledCommand,
-        ?CommandMetadata $commandMetadata
+        ?array $commandMetadata
     )
     {
         $this->scheduledCommand = $scheduledCommand;
@@ -35,7 +34,7 @@ class ScheduledCommandWithMetadata
         return $this->scheduledCommand;
     }
 
-    public function getCommandMetadata():?CommandMetadata
+    public function getCommandMetadata():?array
     {
         return $this->commandMetadata;
     }
