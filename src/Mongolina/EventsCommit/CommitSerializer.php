@@ -74,7 +74,8 @@ class CommitSerializer
             (string)$document['aggregateId'],
             $document['aggregateClass'],
             \DateTimeImmutable::createFromMutable($document['createdAt']->toDateTime()),
-            $document['authenticatedUserId']
+            $document['authenticatedUserId'],
+            $document['commandMeta'] ?  $this->commandMetaFromDocument($document['commandMeta']) : null
         );
 
         return new EventWithMetaData(
