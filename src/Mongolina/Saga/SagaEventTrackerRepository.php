@@ -121,4 +121,11 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
             ->addFilter(new EqualDirect('ended', false))
             ->addFilter(new EqualDirect('sagaId', $processId));
     }
+
+    public function resetTracker(string $sagaId)
+    {
+        $this->collection->deleteMany([
+            'sagaId'  => $sagaId,
+        ]);
+    }
 }
