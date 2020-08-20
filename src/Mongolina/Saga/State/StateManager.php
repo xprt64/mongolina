@@ -206,4 +206,12 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
             ]);
         }
     }
+
+    public function deleteState($stateId, string $stateClass, string $storageName, string $namespace = '')
+    {
+        $this->getCollection($storageName, $namespace)->deleteMany([
+            'stateClass' => $stateClass,
+            'stateId'    => (string)$stateId,
+        ]);
+    }
 }
