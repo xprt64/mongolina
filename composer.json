@@ -12,7 +12,7 @@
   "require": {
     "php": "^8.0",
     "mongodb/mongodb": "^1.8.0",
-    "xprt64/types": "^1.0",
+    "xprt64/types": "^1.0.24",
     "xprt64/lib": "^1.0.3",
     "xprt64/dudulina": "^5.1.7",
     "xprt64/iterator": "^1.0",
