@@ -168,7 +168,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         $this->getCollection($storageName, $namespace)->deleteMany([]);
     }
 
-    private function getCollection(string $storageName, string $namespace): Collection
+    protected function getCollection(string $storageName, string $namespace): Collection
     {
         return $this->database->selectCollection($this->factoryCollectionName($storageName, $namespace));
     }
