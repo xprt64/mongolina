@@ -88,49 +88,42 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
 
         $serialized = $this->objectSerializer->convert($aggregate);
         unset($serialized['version']);
-        try {
-            $version = $this->getStoredAggregateVersion($aggregateDescriptor);
-            $newEventsWithMeta = array_map(function (EventWithMetaData $eventWithMetaData) use ($version) {
-                return $eventWithMetaData->withVersion($version + 1);
-            }, $newEventsWithMeta);
-            $result = $this->collection->updateOne(
-                [
-                    '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
-                    'version' => $version,
-                ],
-                [
-                    '$set'  => ['entity' => $serialized, 'aggregate' => ['id' => new ObjectId((string)$aggregateId), 'class' => $aggregateDescriptor->getAggregateClass()]],
-                    '$inc'  => ['version' => 1],
-                    '$push' => ['events' => ['$each' => $this->objectSerializer->convert($newEventsWithMeta)]],
-                ],
-                [
-                    'upsert' => true,
-                ]
-            );
-            $this->collection->updateOne(
-                [
-                    '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
-                    'version' => $version + 1,
-                ],
-                [
-                    '$pull' => [
-                        'events' => [
-                            '@classes.event'   => ['$in' => $this->getEventClasses($newEventsWithMeta)],
-                            'metaData.version' => ['$lte' => $version],
-                        ],
+
+        $version = $this->getStoredAggregateVersion($aggregateDescriptor);
+        $newEventsWithMeta = array_map(function (EventWithMetaData $eventWithMetaData) use ($version) {
+            return $eventWithMetaData->withVersion($version + 1);
+        }, $newEventsWithMeta);
+        $result = $this->collection->updateOne(
+            [
+                '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
+                'version' => $version,
+            ],
+            [
+                '$set'  => ['entity' => $serialized, 'aggregate' => ['id' => new ObjectId((string)$aggregateId), 'class' => $aggregateDescriptor->getAggregateClass()]],
+                '$inc'  => ['version' => 1],
+                '$push' => ['events' => ['$each' => $this->objectSerializer->convert($newEventsWithMeta)]],
+            ],
+            [
+                'upsert' => true,
+            ]
+        );
+        $this->collection->updateOne(
+            [
+                '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
+                'version' => $version + 1,
+            ],
+            [
+                '$pull' => [
+                    'events' => [
+                        '@classes.event'   => ['$in' => $this->getEventClasses($newEventsWithMeta)],
+                        'metaData.version' => ['$lte' => $version],
                     ],
                 ],
-                [
-                    'upsert' => false,
-                ]
-            );
-        } catch (\MongoDB\Driver\Exception\WriteException $writeException) {
-            $result = $writeException->getWriteResult();
-        }
-
-        if (0 == $result->getMatchedCount() && 0 == $result->getUpsertedCount()) {//no side effect? then concurrent update -> retry
-            throw new ConcurentEventProcessingException("");
-        }
+            ],
+            [
+                'upsert' => false,
+            ]
+        );
 
         return array_map(function (EventWithMetaData $event) use ($version) {
             return $event->withVersion($version + 1);

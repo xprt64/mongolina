@@ -12,7 +12,6 @@ use InvalidArgumentException;
 use MongoDB\BSON\Regex;
 use MongoDB\Collection;
 use MongoDB\Database;
-use MongoDB\Driver\Exception\BulkWriteException;
 use ReflectionFunction;
 use function call_user_func;
 use function unserialize;
@@ -77,26 +76,12 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     public function updateState($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
-        while (true) {
-            try {
-                $this->tryUpdateState($stateId, $updater, $storageName, $namespace);
-                break;
-            } catch (BulkWriteException $bulkWriteException) {
-                continue;
-            }
-        }
+        $this->tryUpdateState($stateId, $updater, $storageName, $namespace);
     }
 
     public function updateStateIfExists($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
-        while (true) {
-            try {
-                $this->tryUpdateStateIfExists($stateId, $updater, $storageName, $namespace);
-                break;
-            } catch (BulkWriteException $bulkWriteException) {
-                continue;
-            }
-        }
+        $this->tryUpdateStateIfExists($stateId, $updater, $storageName, $namespace);
     }
 
     private function getStateClass(callable $update)

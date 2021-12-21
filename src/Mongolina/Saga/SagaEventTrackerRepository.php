@@ -15,7 +15,6 @@ use Gica\MongoDB\Selector\Selector;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
-use MongoDB\Driver\Exception\BulkWriteException;
 
 class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepository
 {
@@ -57,17 +56,13 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
 
     public function startProcessingEvent(string $sagaId, string $eventId)
     {
-        try {
-            $this->collection->insertOne([
-                '_id'     => $this->factoryId(),
-                'date'    => $this->factoryDate(),
-                'sagaId'  => $sagaId,
-                'eventId' => $eventId,
-                'ended'   => false,
-            ]);
-        } catch (BulkWriteException $bulkWriteException) {
-            throw new ConcurentEventProcessingException($bulkWriteException->getMessage());
-        }
+        $this->collection->insertOne([
+            '_id'     => $this->factoryId(),
+            'date'    => $this->factoryDate(),
+            'sagaId'  => $sagaId,
+            'eventId' => $eventId,
+            'ended'   => false,
+        ]);
     }
 
     public function endProcessingEvent(string $sagaId, string $eventId)
@@ -119,13 +114,14 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
             }))
             ->sort('date', true)
             ->addFilter(new EqualDirect('ended', false))
-            ->addFilter(new EqualDirect('sagaId', $processId));
+            ->addFilter(new EqualDirect('sagaId', $processId))
+        ;
     }
 
     public function resetTracker(string $sagaId)
     {
         $this->collection->deleteMany([
-            'sagaId'  => $sagaId,
+            'sagaId' => $sagaId,
         ]);
     }
 }

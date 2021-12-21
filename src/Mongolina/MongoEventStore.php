@@ -16,7 +16,6 @@ use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
-use MongoDB\Driver\Exception\BulkWriteException;
 use Mongolina\EventsCommit\CommitSerializer;
 
 class MongoEventStore implements EventStore
@@ -51,7 +50,8 @@ class MongoEventStore implements EventStore
         MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
         MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory,
         CommitSerializer $commitSerializer
-    ) {
+    )
+    {
         $this->collection = $collection;
         $this->aggregateEventStreamFactory = $aggregateEventStreamFactory;
         $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
@@ -83,26 +83,22 @@ class MongoEventStore implements EventStore
         }
         /** @var MongoAggregateAllEventStream $expectedEventStream */
         $firstEventWithMetaData = reset($eventsWithMetaData);
-        try {
-            $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
-            $this->collection->insertOne(
-                $this->commitSerializer->toDocument(
-                    new EventsCommit(
-                        StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
-                        (string)$aggregateDescriptor->getAggregateId(),
-                        $aggregateDescriptor->getAggregateClass(),
-                        1 + $expectedEventStream->getVersion(),
-                        new Timestamp(0, 0),
-                        new UTCDateTime(microtime(true) * 1000),
-                        $authenticatedUserId ? (string)$authenticatedUserId : null,
-                        $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
-                        $eventsWithMetaData
-                    )
+        $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
+        $this->collection->insertOne(
+            $this->commitSerializer->toDocument(
+                new EventsCommit(
+                    StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
+                    (string)$aggregateDescriptor->getAggregateId(),
+                    $aggregateDescriptor->getAggregateClass(),
+                    1 + $expectedEventStream->getVersion(),
+                    new Timestamp(0, 0),
+                    new UTCDateTime(microtime(true) * 1000),
+                    $authenticatedUserId ? (string)$authenticatedUserId : null,
+                    $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
+                    $eventsWithMetaData
                 )
-            );
-        } catch (BulkWriteException $bulkWriteException) {
-            throw new ConcurrentModificationException($bulkWriteException->getMessage());
-        }
+            )
+        );
         $this->compactTheStream(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $expectedEventStream->getVersion(), $eventsWithMetaData);
     }
 
@@ -210,10 +206,9 @@ class MongoEventStore implements EventStore
         if (!$document) {
             return;
         }
-        if(count($document[MongoEventStore::EVENTS]) === 1){
+        if (count($document[MongoEventStore::EVENTS]) === 1) {
             $this->collection->deleteOne(['events.id' => $eventId]);
-        }
-        else{
+        } else {
             foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubDocument) {
                 if ($eventSubDocument['id'] !== $eventId) {
                     continue;
