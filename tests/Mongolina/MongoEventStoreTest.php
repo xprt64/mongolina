@@ -24,13 +24,13 @@ use Mongolina\MongoAllEventByClassesStreamFactory;
 use Mongolina\MongoEventStore;
 use tests\Dudulina\MongoTestHelper;
 
-class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
+class MongoEventStoreTest extends \PHPUnit\Framework\TestCase
 {
     const AGGREGATE_CLASS = 'aggClass';
     /** @var \MongoDB\Collection */
     private $collection;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
     }
@@ -88,11 +88,9 @@ class MongoEventStoreTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * @expectedException \Dudulina\EventStore\Exception\ConcurrentModificationException
-     */
     public function test_appendEventsForAggregateShouldNotWriteTwiceTheSameEvents()
     {
+        $this->expectException(\Dudulina\EventStore\Exception\ConcurrentModificationException::class);
         $eventStore = $this->factoryEventStore();
 
         $eventStore->dropStore();

@@ -16,12 +16,12 @@ use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/MongoTestHelper.php';
 
-class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
+class ScheduledCommandStoreTest extends \PHPUnit\Framework\TestCase
 {
     /** @var \MongoDB\Collection */
     private $collection;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
     }
@@ -88,7 +88,7 @@ class ScheduledCommandStoreTest extends \PHPUnit_Framework_TestCase
         $command->method('getMessageId')
             ->willReturn('1234');
 
-        $commandMetadata = (new CommandMetadata())->withCorrelationId(Guid::generate());
+        $commandMetadata = ['correlationId' => Guid::generate()->__toString()];
 
         $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);
         $commandScheduler->scheduleCommand($command, $this->factoryAggregateDescriptor(), $commandMetadata);

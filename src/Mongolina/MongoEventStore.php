@@ -16,6 +16,7 @@ use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
+use MongoDB\Driver\Exception\BulkWriteException;
 use Mongolina\EventsCommit\CommitSerializer;
 
 class MongoEventStore implements EventStore
@@ -83,23 +84,40 @@ class MongoEventStore implements EventStore
         }
         /** @var MongoAggregateAllEventStream $expectedEventStream */
         $firstEventWithMetaData = reset($eventsWithMetaData);
-        $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
-        $this->collection->insertOne(
-            $this->commitSerializer->toDocument(
-                new EventsCommit(
-                    StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
-                    (string)$aggregateDescriptor->getAggregateId(),
-                    $aggregateDescriptor->getAggregateClass(),
-                    1 + $expectedEventStream->getVersion(),
-                    new Timestamp(0, 0),
-                    new UTCDateTime(microtime(true) * 1000),
-                    $authenticatedUserId ? (string)$authenticatedUserId : null,
-                    $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
-                    $eventsWithMetaData
+        try {
+            $authenticatedUserId = $firstEventWithMetaData->getMetaData()->getAuthenticatedUserId();
+            $this->collection->insertOne(
+                $this->commitSerializer->toDocument(
+                    new EventsCommit(
+                        StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
+                        (string)$aggregateDescriptor->getAggregateId(),
+                        $aggregateDescriptor->getAggregateClass(),
+                        1 + $expectedEventStream->getVersion(),
+                        new Timestamp(0, 0),
+                        new UTCDateTime(microtime(true) * 1000),
+                        $authenticatedUserId ? (string)$authenticatedUserId : null,
+                        $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
+                        $eventsWithMetaData
+                    )
                 )
-            )
-        );
+            );
+
+        } catch (BulkWriteException $bulkWriteException) {
+            if ($this->isDuplicateKeyException($bulkWriteException)) {
+                throw new ConcurrentModificationException($bulkWriteException->getMessage());
+            }
+        }
         $this->compactTheStream(StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor), $expectedEventStream->getVersion(), $eventsWithMetaData);
+    }
+
+    public static function isDuplicateKeyException(BulkWriteException $bulkWriteException): bool
+    {
+        foreach ($bulkWriteException->getWriteResult()->getWriteErrors() as $error) {
+            if ($error->getCode() === 11000) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

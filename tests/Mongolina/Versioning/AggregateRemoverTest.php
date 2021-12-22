@@ -27,7 +27,7 @@ use Mongolina\MongoEventStore;
 use Mongolina\Versioning\InlineEventMigrator\EventReplacer;
 use tests\Dudulina\MongoTestHelper;
 
-class AggregateRemoverTest extends \PHPUnit_Framework_TestCase
+class AggregateRemoverTest extends \PHPUnit\Framework\TestCase
 {
     const AGGREGATE_CLASS = 'aggClass';
     const AGGREGATE_ID    = 123;
@@ -35,7 +35,7 @@ class AggregateRemoverTest extends \PHPUnit_Framework_TestCase
     /** @var \MongoDB\Collection */
     private $collection;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
     }

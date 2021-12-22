@@ -10,7 +10,7 @@ use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/../../MongoTestHelper.php';
 
-class StateManagerTest extends \PHPUnit_Framework_TestCase
+class StateManagerTest extends \PHPUnit\Framework\TestCase
 {
     private const STATE_ID = 123;
 
@@ -20,7 +20,7 @@ class StateManagerTest extends \PHPUnit_Framework_TestCase
     /** @var \MongoDB\Database */
     private $adminDatabase;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->database = (new MongoTestHelper())->getDatabase();
         $this->adminDatabase = (new MongoTestHelper())->getAdminDatabase();

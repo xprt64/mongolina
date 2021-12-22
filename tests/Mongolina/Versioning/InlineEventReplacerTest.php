@@ -26,14 +26,14 @@ use Mongolina\MongoEventStore;
 use Mongolina\Versioning\InlineEventMigrator\EventReplacer;
 use tests\Dudulina\MongoTestHelper;
 
-class InlineEventReplacerTest extends \PHPUnit_Framework_TestCase
+class InlineEventReplacerTest extends \PHPUnit\Framework\TestCase
 {
     const AGGREGATE_CLASS = 'aggClass';
     const AGGREGATE_ID    = 123;
     /** @var \MongoDB\Collection */
     private $collection;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $this->collection = (new MongoTestHelper())->selectCollection('eventStore');
     }

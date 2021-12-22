@@ -1,4 +1,4 @@
-FROM php:7.4-cli
+FROM php:8.1-cli
 
 # Install dependencies
 RUN apt-get update -q && \
@@ -21,8 +21,9 @@ RUN apt-get update -q && apt-get install -y -q libonig-dev && \
 
 RUN apt-get install -y -q libzip-dev && docker-php-ext-install -j$(nproc) zip
 
-RUN pecl install mongodb && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/20-mongodb.ini
+RUN apt-get update -q && pecl install mongodb && echo "extension=mongodb.so" > /usr/local/etc/php/conf.d/20-mongodb.ini
 
+RUN echo 'error_reporting = E_ALL & ~E_DEPRECATED & ~E_NOTICE' >> /usr/local/etc/php/php.ini
 COPY ./ /app/
 
 CMD php /app/vendor/bin/phpunit --bootstrap  /app/vendor/autoload.php /app/tests/Mongolina

@@ -11,12 +11,12 @@ use tests\Dudulina\MongoTestHelper;
 
 require_once __DIR__ . '/../MongoTestHelper.php';
 
-class SagaEventTrackerRepositoryTest extends \PHPUnit_Framework_TestCase
+class SagaEventTrackerRepositoryTest extends \PHPUnit\Framework\TestCase
 {
     /** @var SagaEventTrackerRepository */
     private $sut;
 
-    protected function setUp()
+    protected function setUp():void
     {
         $collectionStart = (new MongoTestHelper())->selectCollection('start');
 

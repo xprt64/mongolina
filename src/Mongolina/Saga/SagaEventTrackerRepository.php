@@ -8,6 +8,7 @@ namespace Mongolina\Saga;
 
 use Dudulina\EventProcessing\ConcurentEventProcessingException;
 use Dudulina\EventProcessing\InProgressProcessingEvent;
+use MongoDB\Driver\Exception\BulkWriteException;
 use Mongolina\EventProcessing\MongoInProgressProcessingEvent;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use Gica\MongoDB\Selector\Filter\Comparison\EqualDirect;
@@ -56,13 +57,19 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
 
     public function startProcessingEvent(string $sagaId, string $eventId)
     {
-        $this->collection->insertOne([
-            '_id'     => $this->factoryId(),
-            'date'    => $this->factoryDate(),
-            'sagaId'  => $sagaId,
-            'eventId' => $eventId,
-            'ended'   => false,
-        ]);
+        try {
+            $this->collection->insertOne([
+                '_id'     => $this->factoryId(),
+                'date'    => $this->factoryDate(),
+                'sagaId'  => $sagaId,
+                'eventId' => $eventId,
+                'ended'   => false,
+            ]);
+        } catch (BulkWriteException $bulkWriteException) {
+            if (\Mongolina\MongoEventStore::isDuplicateKeyException($bulkWriteException)) {
+                throw new ConcurentEventProcessingException($bulkWriteException->getMessage());
+            }
+        }
     }
 
     public function endProcessingEvent(string $sagaId, string $eventId)

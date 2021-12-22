@@ -83,7 +83,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
     /**
      * @inheritdoc
      */
-    public function getIterator()
+    public function getIterator():\Traversable
     {
         return $this->getIteratorForEvents($this->getCursorForEvents());
     }
@@ -227,7 +227,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
         return $pipeline;
     }
 
-    public function count()
+    public function count():int
     {
         $pipeline = $this->getEventsPipeline(false);
 
