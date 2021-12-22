@@ -239,7 +239,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
             'noCursorTimeout' => true,
         ];
 
-        return iterator_to_array($this->collection->aggregate(
+        return (int)iterator_to_array($this->collection->aggregate(
             $pipeline,
             $options
         ))[0]['total'];
