@@ -38,7 +38,7 @@ class CqrsAllEventByClassesStream implements \Dudulina\EventStore\EventStream
     /**
      * @inheritdoc
      */
-    public function getIterator()
+    public function getIterator():\Traversable
     {
         return $this->getIteratorForEvents($this->getCursorForEvents());
     }
@@ -104,7 +104,7 @@ class CqrsAllEventByClassesStream implements \Dudulina\EventStore\EventStream
         return $pipeline;
     }
 
-    public function count()
+    public function count():int
     {
         $pipeline = $this->getEventsPipeline();
 
