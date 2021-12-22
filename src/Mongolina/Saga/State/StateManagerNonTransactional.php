@@ -12,14 +12,15 @@ use InvalidArgumentException;
 use MongoDB\BSON\Regex;
 use MongoDB\Collection;
 use MongoDB\Database;
+use MongoDB\Driver\Exception\BulkWriteException;
 use ReflectionFunction;
 use function call_user_func;
 use function unserialize;
 
 /**
- * State manager; uses transactions
+ * State manager; uses optimistic locking
  */
-class StateManager implements ProcessStateUpdater, ProcessStateLoader
+class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateLoader
 {
     public function __construct(
         private Database $database,
@@ -64,12 +65,26 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     public function updateState($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
-        $this->tryUpdateState($stateId, $updater, $storageName, $namespace);
+        while (true) {
+            try {
+                $this->tryUpdateState($stateId, $updater, $storageName, $namespace);
+                break;
+            } catch (BulkWriteException $bulkWriteException) {
+                continue;
+            }
+        }
     }
 
     public function updateStateIfExists($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
-        $this->tryUpdateStateIfExists($stateId, $updater, $storageName, $namespace);
+        while (true) {
+            try {
+                $this->tryUpdateStateIfExists($stateId, $updater, $storageName, $namespace);
+                break;
+            } catch (BulkWriteException $bulkWriteException) {
+                continue;
+            }
+        }
     }
 
     private function getStateClass(callable $update)
@@ -141,7 +156,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
         $this->getCollection($storageName, $namespace)->deleteMany([]);
     }
 
-    protected function getCollection(string $storageName, string $namespace): Collection
+    private function getCollection(string $storageName, string $namespace): Collection
     {
         return $this->database->selectCollection($this->factoryCollectionName($storageName, $namespace));
     }
