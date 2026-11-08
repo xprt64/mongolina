@@ -6,7 +6,7 @@
 namespace Mongolina\ScheduledCommand;
 
 use Gica\Types\Guid;
-use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\ObjectId;
 use MongoDB\Collection;
 
 trait ScheduledCommandStoreTrait
@@ -22,13 +22,13 @@ trait ScheduledCommandStoreTrait
         $this->collection = $collection;
     }
 
-    private function messageIdToMongoId($messageId): ObjectID
+    private function messageIdToMongoId($messageId): ObjectId
     {
         if (null === $messageId || '' === $messageId) {
-            return new ObjectID(Guid::generate());
+            return new ObjectId(Guid::generate());
         }
 
-        return new ObjectID(Guid::fromFixedString('scheduled-message-' . $messageId));
+        return new ObjectId(Guid::fromFixedString('scheduled-message-' . $messageId));
     }
 
     public function createStore()

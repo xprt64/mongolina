@@ -55,16 +55,15 @@ class ScheduledCommandStoreTest extends \PHPUnit\Framework\TestCase
 
         $this->assertCount(1, $collection->find()->toArray());
 
-        $processor = $this->getMockBuilder(\stdClass::class)
-            ->setMethods(['__invoke'])
-            ->getMock();
+        $processedCommands = [];
+        $processor = function ($processedCommand) use (&$processedCommands) {
+            $processedCommands[] = $processedCommand;
+        };
 
-        $processor->expects($this->once())
-            ->method('__invoke')
-            ->with($command);
-
-        /** @var callable $processor */
         $scheduledCommandStore->loadAndProcessScheduledCommands($processor);
+
+        $this->assertCount(1, $processedCommands);
+        $this->assertEquals($command, $processedCommands[0]);
 
         $this->assertCount(0, $collection->find()->toArray());
     }

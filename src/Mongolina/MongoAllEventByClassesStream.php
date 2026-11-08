@@ -77,7 +77,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
 
     public function countCommits(): int
     {
-        return $this->collection->count($this->getFilter());
+        return $this->collection->countDocuments($this->getFilter());
     }
 
     /**

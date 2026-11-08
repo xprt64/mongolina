@@ -40,7 +40,7 @@ class TailableMongoEventStream implements TailableEventStream
     /**
      * @inheritdoc
      */
-    public function tail(callable $callback, $eventClasses = [], string $afterSequence = null): void
+    public function tail(callable $callback, $eventClasses = [], ?string $afterSequence = null): void
     {
         $collection = $this->mongoClient->local->selectCollection('oplog.rs');
 
@@ -74,7 +74,7 @@ class TailableMongoEventStream implements TailableEventStream
         }
     }
 
-    private function processCommit(callable $callback, $document, EventSequence $afterSequence = null)
+    private function processCommit(callable $callback, $document, ?EventSequence $afterSequence = null)
     {
         foreach ($document[MongoEventStore::EVENTS] as $index => $eventSubdocument) {
             $eventWithMetaData = $this->commitSerializer->extractEventFromSubDocument($eventSubdocument, $index, $document);

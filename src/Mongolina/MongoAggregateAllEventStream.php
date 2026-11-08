@@ -70,7 +70,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         );
     }
 
-    public function getCursorGreaterThanToSomeVersion(int $version, int $limit = null): Cursor
+    public function getCursorGreaterThanToSomeVersion(int $version, ?int $limit = null): Cursor
     {
         $options = [
             'sort' => [

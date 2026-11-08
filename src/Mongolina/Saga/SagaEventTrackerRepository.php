@@ -13,7 +13,7 @@ use Mongolina\EventProcessing\MongoInProgressProcessingEvent;
 use Gica\Iterator\IteratorTransformer\IteratorMapper;
 use Gica\MongoDB\Selector\Filter\Comparison\EqualDirect;
 use Gica\MongoDB\Selector\Selector;
-use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Collection;
 
@@ -93,14 +93,14 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
         ]);
     }
 
-    private function factoryId(): ObjectID
+    private function factoryId(): ObjectId
     {
-        return new ObjectID();
+        return new ObjectId();
     }
 
     private function factoryDate(): UTCDateTime
     {
-        return new UTCDateTime(microtime(true) * 1000);
+        return new UTCDateTime((int)(microtime(true) * 1000));
     }
 
     /**

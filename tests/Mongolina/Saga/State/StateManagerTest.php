@@ -79,7 +79,7 @@ class StateManagerTest extends \PHPUnit\Framework\TestCase
         $sut->createStorage($storageName, $sourceNamespace);
         $sut->createStorage($storageName, $destinationNamespace);
 
-        $updater = function (\stdClass $state = null) {
+        $updater = function (?\stdClass $state = null) {
             return 345;
         };
         $sut->updateState(self::STATE_ID, $updater, $storageName, $sourceNamespace);

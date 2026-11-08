@@ -94,7 +94,7 @@ class MongoEventStore implements EventStore
                         $aggregateDescriptor->getAggregateClass(),
                         1 + $expectedEventStream->getVersion(),
                         new Timestamp(0, 0),
-                        new UTCDateTime(microtime(true) * 1000),
+                        new UTCDateTime((int)(microtime(true) * 1000)),
                         $authenticatedUserId ? (string)$authenticatedUserId : null,
                         $firstEventWithMetaData->getMetaData()->getCommandMetadata(),
                         $eventsWithMetaData

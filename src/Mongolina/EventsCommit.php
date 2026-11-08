@@ -6,13 +6,13 @@
 namespace Mongolina;
 
 use Dudulina\Event\EventWithMetaData;
-use MongoDB\BSON\ObjectID;
+use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\Timestamp;
 use MongoDB\BSON\UTCDateTime;
 
 class EventsCommit
 {
-    /** @var ObjectID */
+    /** @var ObjectId */
     private $streamName;
 
     /** @var string */
@@ -40,7 +40,7 @@ class EventsCommit
     private $eventsWithMetadata;
 
     public function __construct(
-        ObjectID $streamName,
+        ObjectId $streamName,
         string $aggregateId,
         string $aggregateClass,
         int $version,
@@ -61,7 +61,7 @@ class EventsCommit
         $this->eventsWithMetadata = $eventsWithMetadata;
     }
 
-    public function getStreamName(): ObjectID
+    public function getStreamName(): ObjectId
     {
         return $this->streamName;
     }

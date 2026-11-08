@@ -97,7 +97,12 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
 
         $parameter = $reflection->getParameters()[0];
 
-        return [$parameter->getClass()->name, $parameter->isOptional()];
+        $type = $parameter->getType();
+        if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {
+            throw new InvalidArgumentException('Updater callback must have one type-hinted parameter');
+        }
+
+        return [$type->getName(), $parameter->isOptional()];
     }
 
     private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = '')
@@ -145,7 +150,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
 
     public function debugGetVersionCountForState(string $stateClass, $stateId, string $storageName = 'global_namespace', string $namespace = ''): int
     {
-        return $this->getCollection($storageName, $namespace)->count([
+        return $this->getCollection($storageName, $namespace)->countDocuments([
             'stateClass' => $stateClass,
             'stateId'    => (string)$stateId,
         ]);

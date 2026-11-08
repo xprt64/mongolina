@@ -32,7 +32,7 @@ class InlineEventReplacer
         $this->commitSerializer = $commitSerializer;
     }
 
-    public function replaceEvent(EventReplacer $replacer, string $eventClass, callable $progressCallback = null)
+    public function replaceEvent(EventReplacer $replacer, string $eventClass, ?callable $progressCallback = null)
     {
         $cursor = $this->collection->find([
             MongoEventStore::EVENTS_EVENT_CLASS => $eventClass,
