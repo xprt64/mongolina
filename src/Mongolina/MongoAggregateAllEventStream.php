@@ -27,12 +27,14 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         $this->aggregateDescriptor = $aggregateDescriptor;
     }
 
+    #[\Override]
     public function getIterator():\Traversable
     {
         return $this->eventStreamIterator->getIteratorThatExtractsEventsFromDocument(
             $this->getCursorLessThanOrEqualToVersion());
     }
 
+    #[\Override]
     public function getVersion(): int
     {
         return $this->version;
@@ -83,6 +85,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
         );
     }
 
+    #[\Override]
     public function count():int
     {
         $pipeline = [];

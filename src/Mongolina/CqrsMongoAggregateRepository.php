@@ -28,6 +28,7 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
         return fn($document) => $this->objectHydrator->hydrateObject($entityClass, $document['entity']);
     }
 
+    #[\Override]
     public function loadAggregate(AggregateDescriptor $aggregateDescriptor)
     {
         $document = $this->collection->findOne([
@@ -57,6 +58,7 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
         return $this->aggregateVersion[$aggregateDescriptor->getAggregateClass() . '-' . $aggregateDescriptor->getAggregateId()];
     }
 
+    #[\Override]
     public function saveAggregate($aggregateId, $aggregate, $newEventsWithMeta)
     {
         if (!$newEventsWithMeta) {

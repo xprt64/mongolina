@@ -44,6 +44,7 @@ class MongoEventStore implements EventStore
         $this->collection = $collection;
     }
 
+    #[\Override]
     public function loadEventsForAggregate(AggregateDescriptor $aggregateDescriptor): AggregateEventStream
     {
         return $this->aggregateEventStreamFactory->createStream($this->collection, $aggregateDescriptor);
@@ -62,6 +63,7 @@ class MongoEventStore implements EventStore
         $this->collection->drop();
     }
 
+    #[\Override]
     public function appendEventsForAggregate(AggregateDescriptor $aggregateDescriptor, $eventsWithMetaData, AggregateEventStream $expectedEventStream): void
     {
         if (!$eventsWithMetaData) {
@@ -146,11 +148,13 @@ class MongoEventStore implements EventStore
         );
     }
 
+    #[\Override]
     public function loadEventsByClassNames(array $eventClasses): SeekableEventStream
     {
         return $this->allEventByClassesStreamFactory->createStream($this->collection, $eventClasses);
     }
 
+    #[\Override]
     public function findEventById(string $eventId): ?EventWithMetaData
     {
         $document = $this->fetchCommitDocumentByEventById($eventId);
@@ -180,6 +184,7 @@ class MongoEventStore implements EventStore
         return null;
     }
 
+    #[\Override]
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
         return new LastAggregateVersionFetcher()->fetchLatestVersion($this->collection, $aggregateDescriptor);

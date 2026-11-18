@@ -33,7 +33,7 @@ class InlineEventReplacer
         }
     }
 
-    private function updateCommit($commit, EventReplacer $replacer, string $eventClass)
+    private function updateCommit($commit, EventReplacer $replacer, string $eventClass): void
     {
         $commitUpdated = false;
 

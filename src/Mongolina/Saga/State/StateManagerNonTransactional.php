@@ -29,6 +29,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
     {
     }
 
+    #[\Override]
     public function createStorage(string $storageName = 'global_namespace', string $namespace = '')
     {
         $collection = $this->getCollection($storageName, $namespace);
@@ -36,6 +37,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         $collection->createIndex(['stateClass' => 1, 'stateId' => 1, 'version' => -1], ['unique' => true]);
     }
 
+    #[\Override]
     public function loadState(string $stateClass, $stateId, string $storageName = 'global_namespace', string $namespace = '')
     {
         return $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
@@ -63,6 +65,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         return null;
     }
 
+    #[\Override]
     public function updateState($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
         while (true) {
@@ -75,6 +78,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         }
     }
 
+    #[\Override]
     public function updateStateIfExists($stateId, callable $updater, string $storageName = 'global_namespace', string $namespace = '')
     {
         while (true) {
@@ -105,7 +109,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         return [$type->getName(), $parameter->isOptional()];
     }
 
-    private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = '')
+    private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = ''): void
     {
         [$stateClass, $isOptional] = $this->getStateClass($updater);
 
@@ -120,7 +124,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $storageName, $namespace);
     }
 
-    private function tryUpdateStateIfExists($stateId, callable $updater, string $storageName, string $namespace = '')
+    private function tryUpdateStateIfExists($stateId, callable $updater, string $storageName, string $namespace = ''): void
     {
         [$stateClass, $isOptional] = $this->getStateClass($updater);
 
@@ -132,7 +136,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         $this->updateStateWithVersion($stateClass, $stateId, $newState, $version, $storageName, $namespace);
     }
 
-    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded, string $storageName, string $namespace = '')
+    private function updateStateWithVersion(string $stateClass, $stateId, $newState, int $versionWhenLoaded, string $storageName, string $namespace = ''): void
     {
         $this->getCollection($storageName, $namespace)->insertOne([
             'stateClass' => $stateClass,
@@ -156,6 +160,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         ]);
     }
 
+    #[\Override]
     public function clearAllStates(string $storageName = 'global_namespace', string $namespace = '')
     {
         $this->getCollection($storageName, $namespace)->deleteMany([]);
@@ -182,6 +187,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         return $namespace . '_ps_' . $name;
     }
 
+    #[\Override]
     public function moveEntireNamespace(string $sourceNamespace, string $destinationNamespace)
     {
         $collections = $this->database->listCollections([
@@ -200,6 +206,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
         }
     }
 
+    #[\Override]
     public function deleteState($stateId, string $stateClass, string $storageName, string $namespace = '')
     {
         $this->getCollection($storageName, $namespace)->deleteMany([

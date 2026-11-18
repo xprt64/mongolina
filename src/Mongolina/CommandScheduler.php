@@ -15,6 +15,7 @@ class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
 {
     use ScheduledCommandStoreTrait;
 
+    #[\Override]
     public function scheduleCommand(ScheduledCommand $scheduledCommand, AggregateDescriptor $aggregateDescriptor, $commandMetadata = null)
     {
         $messageIdToMongoId = $this->messageIdToMongoId($scheduledCommand->getMessageId());
@@ -37,6 +38,7 @@ class CommandScheduler implements \Dudulina\Scheduling\CommandScheduler
         ]);
     }
 
+    #[\Override]
     public function cancelCommand($commandId)
     {
         $this->collection->deleteOne([

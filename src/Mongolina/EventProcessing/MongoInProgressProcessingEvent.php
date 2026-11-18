@@ -29,11 +29,13 @@ class MongoInProgressProcessingEvent implements InProgressProcessingEvent
         $this->eventId = $eventId;
     }
 
+    #[\Override]
     public function getDate(): \DateTimeImmutable
     {
         return $this->date;
     }
 
+    #[\Override]
     public function getEventId()
     {
         return $this->eventId;

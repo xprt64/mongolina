@@ -30,6 +30,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
         $this->collection->createIndex(['sagaId' => 1, 'ended' => 1,]);
     }
 
+    #[\Override]
     public function isEventProcessingAlreadyStarted(string $sagaId, string $eventId): bool
     {
         return null !== $this->collection->findOne([
@@ -38,6 +39,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
             ]);
     }
 
+    #[\Override]
     public function isEventProcessingAlreadyEnded(string $sagaId, string $eventId): bool
     {
         return null !== $this->collection->findOne([
@@ -47,6 +49,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
             ]);
     }
 
+    #[\Override]
     public function startProcessingEvent(string $sagaId, string $eventId)
     {
         try {
@@ -64,6 +67,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
         }
     }
 
+    #[\Override]
     public function endProcessingEvent(string $sagaId, string $eventId)
     {
         $this->collection->updateOne([
@@ -77,6 +81,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
         ]);
     }
 
+    #[\Override]
     public function clearProcessingEvent(string $sagaId, string $eventId)
     {
         $this->collection->deleteOne([
@@ -99,6 +104,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
      * @param string $processId
      * @return InProgressProcessingEvent[]|\Countable|\Iterator
      */
+    #[\Override]
     public function getAllInProgressProcessingEvents(string $processId)
     {
         return new Selector($this->collection)

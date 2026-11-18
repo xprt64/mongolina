@@ -40,16 +40,19 @@ class MongoAllEventByClassesStream implements SeekableEventStream
         $this->limit = $limit;
     }
 
+    #[\Override]
     public function afterSequence(\Dudulina\EventStore\EventSequence $after)
     {
         $this->afterSequence = $after;
     }
 
+    #[\Override]
     public function beforeSequence(\Dudulina\EventStore\EventSequence $before)
     {
         $this->beforeSequence = $before;
     }
 
+    #[\Override]
     public function sort(bool $chronological)
     {
         $this->ascending = $chronological;
@@ -63,6 +66,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
     /**
      * @inheritdoc
      */
+    #[\Override]
     public function getIterator():\Traversable
     {
         return $this->getIteratorForEvents($this->getCursorForEvents());
@@ -203,6 +207,7 @@ class MongoAllEventByClassesStream implements SeekableEventStream
         return $pipeline;
     }
 
+    #[\Override]
     public function count():int
     {
         $pipeline = $this->getEventsPipeline(false);

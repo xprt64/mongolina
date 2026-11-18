@@ -42,7 +42,7 @@ class CommitSerializer
         return json_decode($document, true);
     }
 
-    private function unpackEvents($document)
+    private function unpackEvents($document): array
     {
         return array_map(fn($index, $eventSubDocument) => $this->extractEventFromSubDocument($eventSubDocument, $index, $document), array_keys($document['events']), $document['events']);
     }

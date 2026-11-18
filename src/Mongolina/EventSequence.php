@@ -39,6 +39,7 @@ class EventSequence implements \Dudulina\EventStore\EventSequence
         return $this->indexInsideCommit;
     }
 
+    #[\Override]
     public function __toString()
     {
         return $this->timestamp->__toString() . ';' . $this->indexInsideCommit;
@@ -75,6 +76,7 @@ class EventSequence implements \Dudulina\EventStore\EventSequence
     }
 
 
+    #[\Override]
     public function isBefore(\Dudulina\EventStore\EventSequence $other): bool
     {
         return $this->timestamp < $other->timestamp || ($this->timestamp === $other->timestamp && $this->indexInsideCommit < $other->indexInsideCommit);
