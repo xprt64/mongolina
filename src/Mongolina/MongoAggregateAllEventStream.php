@@ -50,7 +50,7 @@ class MongoAggregateAllEventStream implements AggregateEventStream
 
     private function fetchLatestVersion(AggregateDescriptor $aggregateDescriptor): int
     {
-        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
+        return new LastAggregateVersionFetcher()->fetchLatestVersion($this->collection, $aggregateDescriptor);
     }
 
     private function getCursorLessThanOrEqualToVersion(): Cursor

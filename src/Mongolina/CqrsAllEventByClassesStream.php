@@ -72,9 +72,7 @@ class CqrsAllEventByClassesStream implements \Dudulina\EventStore\EventStream
 
     private function getIteratorForEvents($documents): \Traversable
     {
-        $events = (new IteratorMapper(function ($document) {
-            return ($this->eventHydrator)($document);
-        }))($documents);
+        $events = (new IteratorMapper(fn($document) => ($this->eventHydrator)($document)))($documents);
 
         return $events;
     }

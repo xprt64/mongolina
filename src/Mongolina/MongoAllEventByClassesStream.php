@@ -156,16 +156,12 @@ class MongoAllEventByClassesStream implements SeekableEventStream
 
     private function getIteratorForCommits($cursor): \Traversable
     {
-        return (new IteratorMapper(function ($document) {
-            return $this->commitSerializer->fromDocument($document);
-        }))($cursor);
+        return (new IteratorMapper(fn($document) => $this->commitSerializer->fromDocument($document)))($cursor);
     }
 
     private function getIteratorForEvents($documents): \Traversable
     {
-        $events = (new IteratorMapper(function ($document) {
-            return $this->commitSerializer->extractEventFromSubDocument($document['events'], $document['index'], $document);
-        }))($documents);
+        $events = (new IteratorMapper(fn($document) => $this->commitSerializer->extractEventFromSubDocument($document['events'], $document['index'], $document)))($documents);
 
         if ($this->afterSequence) {
             $filter = new IteratorFilter(function (EventWithMetaData $eventWithMetaData) {

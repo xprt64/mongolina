@@ -63,9 +63,7 @@ class CommitSerializer
 
     private function unpackEvents($document)
     {
-        return array_map(function ($index, $eventSubDocument) use ($document) {
-            return $this->extractEventFromSubDocument($eventSubDocument, $index, $document);
-        }, array_keys($document['events']), $document['events']);
+        return array_map(fn($index, $eventSubDocument) => $this->extractEventFromSubDocument($eventSubDocument, $index, $document), array_keys($document['events']), $document['events']);
     }
 
     public function extractEventFromSubDocument($eventSubDocument, $index, $document): EventWithMetaData
@@ -109,7 +107,7 @@ class CommitSerializer
 
     private function packEvents($events): array
     {
-        return array_map([$this, 'packEvent'], $events);
+        return array_map($this->packEvent(...), $events);
     }
 
     public function extractEventFromCommit($document, string $eventId): ?EventWithMetaData
@@ -141,7 +139,7 @@ class CommitSerializer
     public function packEvent(EventWithMetaData $eventWithMetaData): array
     {
         return [
-            MongoEventStore::EVENT_CLASS => \get_class($eventWithMetaData->getEvent()),
+            MongoEventStore::EVENT_CLASS => $eventWithMetaData->getEvent()::class,
             MongoEventStore::PAYLOAD     => $this->eventSerializer->serializeEvent($eventWithMetaData->getEvent()),
             'dump'                       => $this->objectSerializer->convert($eventWithMetaData->getEvent()),
             'id'                         => $eventWithMetaData->getMetaData()->getEventId(),

@@ -130,9 +130,7 @@ class MongoEventStore implements EventStore
             $class = new \ReflectionClass($eventWithMetaData->getEvent());
             return false !== stripos((string)$class->getDocComment(), self::ANNOTATION_FOR_COMPACT_EVENTS);
         });
-        return array_values(array_map(function (EventWithMetaData $eventWithMetaData) {
-            return \get_class($eventWithMetaData->getEvent());
-        }, $onlyCompactable));
+        return array_values(array_map(fn(EventWithMetaData $eventWithMetaData) => $eventWithMetaData->getEvent()::class, $onlyCompactable));
     }
 
     private function compactTheStream(ObjectId $streamName, int $beforeAndVersion, array $eventsWithMeta): void
@@ -199,7 +197,7 @@ class MongoEventStore implements EventStore
 
     public function getAggregateVersion(AggregateDescriptor $aggregateDescriptor)
     {
-        return (new LastAggregateVersionFetcher())->fetchLatestVersion($this->collection, $aggregateDescriptor);
+        return new LastAggregateVersionFetcher()->fetchLatestVersion($this->collection, $aggregateDescriptor);
     }
 
     public function replaceEvent($eventId, callable $updater)

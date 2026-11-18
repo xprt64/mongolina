@@ -45,9 +45,7 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
 
     private function factoryHydrator(string $entityClass): callable
     {
-        return function ($document) use ($entityClass) {
-            return $this->objectHydrator->hydrateObject($entityClass, $document['entity']);
-        };
+        return fn($document) => $this->objectHydrator->hydrateObject($entityClass, $document['entity']);
     }
 
     public function loadAggregate(AggregateDescriptor $aggregateDescriptor)
@@ -84,15 +82,13 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
         if (!$newEventsWithMeta) {
             return [];
         }
-        $aggregateDescriptor = new AggregateDescriptor($aggregateId, \get_class($aggregate));
+        $aggregateDescriptor = new AggregateDescriptor($aggregateId, $aggregate::class);
 
         $serialized = $this->objectSerializer->convert($aggregate);
         unset($serialized['version']);
 
         $version = $this->getStoredAggregateVersion($aggregateDescriptor);
-        $newEventsWithMeta = array_map(function (EventWithMetaData $eventWithMetaData) use ($version) {
-            return $eventWithMetaData->withVersion($version + 1);
-        }, $newEventsWithMeta);
+        $newEventsWithMeta = array_map(fn(EventWithMetaData $eventWithMetaData) => $eventWithMetaData->withVersion($version + 1), $newEventsWithMeta);
         $result = $this->collection->updateOne(
             [
                 '_id'     => \Mongolina\StreamName::factoryStreamNameFromDescriptor($aggregateDescriptor),
@@ -125,9 +121,7 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
             ]
         );
 
-        return array_map(function (EventWithMetaData $event) use ($version) {
-            return $event->withVersion($version + 1);
-        }, $newEventsWithMeta);
+        return array_map(fn(EventWithMetaData $event) => $event->withVersion($version + 1), $newEventsWithMeta);
     }
 
     /**
@@ -136,9 +130,7 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
      */
     private function getEventClasses($events): array
     {
-        return array_map(function (EventWithMetaData $eventWithMetaData) {
-            return \get_class($eventWithMetaData->getEvent());
-        }, $events);
+        return array_map(fn(EventWithMetaData $eventWithMetaData) => $eventWithMetaData->getEvent()::class, $events);
     }
 
     private function rehydrateAggregate(string $aggregateClass, ?array $document)
@@ -148,12 +140,10 @@ class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepos
 
     public function loadEventsByClassNames(array $eventClasses): \Dudulina\EventStore\EventStream
     {
-        return new CqrsAllEventByClassesStream($this->collection, $eventClasses, function ($document) {
-            return new EventWithMetaData(
-                $this->objectHydrator->hydrateObject($document['events']['@classes']['event'], $document['events']['event']),
-                $this->objectHydrator->hydrateObject($document['events']['@classes']['metaData'], $document['events']['metaData'])
-            );
-        });
+        return new CqrsAllEventByClassesStream($this->collection, $eventClasses, fn($document) => new EventWithMetaData(
+            $this->objectHydrator->hydrateObject($document['events']['@classes']['event'], $document['events']['event']),
+            $this->objectHydrator->hydrateObject($document['events']['@classes']['metaData'], $document['events']['metaData'])
+        ));
     }
 
     public function create()

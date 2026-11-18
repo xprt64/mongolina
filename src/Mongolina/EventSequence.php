@@ -46,7 +46,7 @@ class EventSequence implements \Dudulina\EventStore\EventSequence
 
     public static function fromString(string $str): self
     {
-        list($timestampStr, $indexStr) = explode(';', $str);
+        [$timestampStr, $indexStr] = explode(';', $str);
         if (!self::isTimestampString($timestampStr)) {
             throw new \InvalidArgumentException("Not a valid timestamp:$timestampStr");
         }
@@ -55,13 +55,13 @@ class EventSequence implements \Dudulina\EventStore\EventSequence
 
     public static function isValidString(string $str): bool
     {
-        list($timestampStr, $indexStr) = explode(';', $str);
+        [$timestampStr, $indexStr] = explode(';', $str);
         return self::isTimestampString($timestampStr) && is_numeric($indexStr);
     }
 
     public static function factoryTimestampFromString($value): Timestamp
     {
-        list($a, $b) = explode(':', trim($value, '[]'));
+        [$a, $b] = explode(':', trim($value, '[]'));
 
         $a = $a < 0 ? 0 : $a;
         $b = $b < 0 ? 0 : $b;

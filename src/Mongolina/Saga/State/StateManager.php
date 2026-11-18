@@ -92,7 +92,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = '')
     {
-        list($stateClass, $isOptional) = $this->getStateClass($updater);
+        [$stateClass, $isOptional] = $this->getStateClass($updater);
 
         $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
 
@@ -107,7 +107,7 @@ class StateManager implements ProcessStateUpdater, ProcessStateLoader
 
     private function tryUpdateStateIfExists($stateId, callable $updater, string $storageName, string $namespace = '')
     {
-        list($stateClass, $isOptional) = $this->getStateClass($updater);
+        [$stateClass, $isOptional] = $this->getStateClass($updater);
 
         $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
         if (null === $currentState) {

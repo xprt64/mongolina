@@ -109,7 +109,7 @@ class SagaEventTrackerRepository implements \Dudulina\Saga\SagaEventTrackerRepos
      */
     public function getAllInProgressProcessingEvents(string $processId)
     {
-        return (new Selector($this->collection))
+        return new Selector($this->collection)
             ->setIteratorMapper(new IteratorMapper(function ($document) {
                 /** @var UTCDateTime $date */
                 $date = $document['date'];

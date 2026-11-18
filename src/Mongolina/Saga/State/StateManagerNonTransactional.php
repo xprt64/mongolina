@@ -107,7 +107,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
 
     private function tryUpdateState($stateId, callable $updater, string $storageName, string $namespace = '')
     {
-        list($stateClass, $isOptional) = $this->getStateClass($updater);
+        [$stateClass, $isOptional] = $this->getStateClass($updater);
 
         $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
 
@@ -122,7 +122,7 @@ class StateManagerNonTransactional implements ProcessStateUpdater, ProcessStateL
 
     private function tryUpdateStateIfExists($stateId, callable $updater, string $storageName, string $namespace = '')
     {
-        list($stateClass, $isOptional) = $this->getStateClass($updater);
+        [$stateClass, $isOptional] = $this->getStateClass($updater);
 
         $currentState = $this->loadStateWithVersion($stateClass, $stateId, $version, $storageName, $namespace);
         if (null === $currentState) {
