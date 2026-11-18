@@ -33,30 +33,15 @@ class MongoEventStore implements EventStore
 
     /** @var  Collection */
     protected $collection;
-    /**
-     * @var MongoAggregateAllEventStreamFactory
-     */
-    private $aggregateEventStreamFactory;
-    /**
-     * @var MongoAllEventByClassesStreamFactory
-     */
-    private $allEventByClassesStreamFactory;
-    /**
-     * @var \Mongolina\EventsCommit\CommitSerializer
-     */
-    private $commitSerializer;
 
     public function __construct(
         Collection $collection,
-        MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
-        MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory,
-        CommitSerializer $commitSerializer
+        private MongoAggregateAllEventStreamFactory $aggregateEventStreamFactory,
+        private MongoAllEventByClassesStreamFactory $allEventByClassesStreamFactory,
+        private CommitSerializer $commitSerializer
     )
     {
         $this->collection = $collection;
-        $this->aggregateEventStreamFactory = $aggregateEventStreamFactory;
-        $this->allEventByClassesStreamFactory = $allEventByClassesStreamFactory;
-        $this->commitSerializer = $commitSerializer;
     }
 
     public function loadEventsForAggregate(AggregateDescriptor $aggregateDescriptor): AggregateEventStream

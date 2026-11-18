@@ -18,27 +18,8 @@ use Mongolina\MongoEventStore;
 
 class CommitSerializer
 {
-    /**
-     * @var EventSerializer
-     */
-    private $eventSerializer;
-    /**
-     * @var ObjectSerializer
-     */
-    private $objectSerializer;
-    /**
-     * @var ObjectHydrator
-     */
-    private $objectHydrator;
-
-    public function __construct(
-        EventSerializer $eventSerializer,
-        ObjectSerializer $objectSerializer,
-        ObjectHydrator $objectHydrator
-    ) {
-        $this->objectHydrator = $objectHydrator;
-        $this->eventSerializer = $eventSerializer;
-        $this->objectSerializer = $objectSerializer;
+    public function __construct(private EventSerializer $eventSerializer, private ObjectSerializer $objectSerializer, private ObjectHydrator $objectHydrator)
+    {
     }
 
     public function fromDocument($document): EventsCommit

@@ -14,22 +14,8 @@ use Mongolina\Versioning\InlineEventMigrator\EventReplacer;
 class InlineEventReplacer
 {
 
-    /**
-     * @var Collection
-     */
-    private $collection;
-    /**
-     * @var CommitSerializer
-     */
-    private $commitSerializer;
-
-    public function __construct(
-        Collection $collection,
-        CommitSerializer $commitSerializer
-    )
+    public function __construct(private Collection $collection, private CommitSerializer $commitSerializer)
     {
-        $this->collection = $collection;
-        $this->commitSerializer = $commitSerializer;
     }
 
     public function replaceEvent(EventReplacer $replacer, string $eventClass, ?callable $progressCallback = null)

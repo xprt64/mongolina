@@ -11,16 +11,8 @@ use MongoDB\Collection;
 
 class MongoAllEventByClassesStreamFactory
 {
-    /**
-     * @var CommitSerializer
-     */
-    private $commitSerializer;
-
-    public function __construct(
-        CommitSerializer $commitSerializer
-    )
+    public function __construct(private CommitSerializer $commitSerializer)
     {
-        $this->commitSerializer = $commitSerializer;
     }
 
     public function createStream(Collection $collection, array $eventClassNames): MongoAllEventByClassesStream

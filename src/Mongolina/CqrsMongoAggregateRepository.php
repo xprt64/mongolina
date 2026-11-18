@@ -17,30 +17,10 @@ use MongoDB\Collection;
 
 class CqrsMongoAggregateRepository implements \Dudulina\Aggregate\AggregateRepository
 {
-    /**
-     * @var Collection
-     */
-    private $collection;
-
     private $aggregateVersion = [];
-    /**
-     * @var ObjectSerializer
-     */
-    private $objectSerializer;
-    /**
-     * @var ObjectHydrator
-     */
-    private $objectHydrator;
 
-    public function __construct(
-        Collection $collection,
-        ObjectSerializer $objectSerializer,
-        ObjectHydrator $objectHydrator
-    )
+    public function __construct(private Collection $collection, private ObjectSerializer $objectSerializer, private ObjectHydrator $objectHydrator)
     {
-        $this->collection = $collection;
-        $this->objectSerializer = $objectSerializer;
-        $this->objectHydrator = $objectHydrator;
     }
 
     private function factoryHydrator(string $entityClass): callable

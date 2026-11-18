@@ -17,23 +17,10 @@ use Mongolina\EventsCommit\CommitSerializer;
 class MongoAllEventByClassesStream implements SeekableEventStream
 {
 
-    /**
-     * @var Collection
-     */
-    private $collection;
-    /**
-     * @var array
-     */
-    private $eventClassNames;
-
     /** @var int|null */
     private $limit = null;
 
     private $ascending = true;
-    /**
-     * @var \Mongolina\EventsCommit\CommitSerializer
-     */
-    private $commitSerializer;
 
     /** @var EventSequence|null */
     private $afterSequence;
@@ -41,15 +28,8 @@ class MongoAllEventByClassesStream implements SeekableEventStream
     /** @var EventSequence|null */
     private $beforeSequence;
 
-    public function __construct(
-        Collection $collection,
-        array $eventClassNames,
-        CommitSerializer $commitSerializer
-    )
+    public function __construct(private Collection $collection, private array $eventClassNames, private CommitSerializer $commitSerializer)
     {
-        $this->collection = $collection;
-        $this->eventClassNames = $eventClassNames;
-        $this->commitSerializer = $commitSerializer;
     }
 
     /**

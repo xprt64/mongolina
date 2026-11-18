@@ -13,28 +13,8 @@ use Mongolina\EventsCommit\CommitSerializer;
 
 class TailableMongoEventStream implements TailableEventStream
 {
-    /**
-     * @var CommitSerializer
-     */
-    private $commitSerializer;
-    /**
-     * @var Client
-     */
-    private $mongoClient;
-    /**
-     * @var string
-     */
-    private $eventStoreNamespace;
-
-    public function __construct(
-        Client $mongoClient,
-        CommitSerializer $commitSerializer,
-        string $eventStoreNamespace = 'eventStore.eventStore'
-    )
+    public function __construct(private Client $mongoClient, private CommitSerializer $commitSerializer, private string $eventStoreNamespace = 'eventStore.eventStore')
     {
-        $this->commitSerializer = $commitSerializer;
-        $this->mongoClient = $mongoClient;
-        $this->eventStoreNamespace = $eventStoreNamespace;
     }
 
     /**

@@ -12,26 +12,15 @@ use MongoDB\Collection;
 class CqrsAllEventByClassesStream implements \Dudulina\EventStore\EventStream
 {
 
-    /**
-     * @var Collection
-     */
-    private $collection;
-    /**
-     * @var array
-     */
-    private $eventClassNames;
-
     /** @var callable */
     private $eventHydrator;
 
     public function __construct(
-        Collection $collection,
-        array $eventClassNames,
+        private Collection $collection,
+        private array $eventClassNames,
         callable $eventHydrator
     )
     {
-        $this->collection = $collection;
-        $this->eventClassNames = $eventClassNames;
         $this->eventHydrator = $eventHydrator;
     }
 

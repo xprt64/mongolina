@@ -10,16 +10,8 @@ use Gica\Iterator\IteratorTransformer\IteratorExpander;
 
 class EventStreamIterator
 {
-    /**
-     * @var \Mongolina\EventsCommit\CommitSerializer
-     */
-    private $commitSerializer;
-
-    public function __construct(
-        CommitSerializer $commitSerializer
-    )
+    public function __construct(private CommitSerializer $commitSerializer)
     {
-        $this->commitSerializer = $commitSerializer;
     }
 
     public function getIteratorThatExtractsEventsFromDocument($cursor): \Traversable

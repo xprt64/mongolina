@@ -14,16 +14,8 @@ use Mongolina\StreamName;
 class AggregateRemover
 {
 
-    /**
-     * @var Collection
-     */
-    private $collection;
-
-    public function __construct(
-        Collection $collection
-    )
+    public function __construct(private Collection $collection)
     {
-        $this->collection = $collection;
     }
 
     public function removeAggregate(AggregateDescriptor $aggregateDescriptor)

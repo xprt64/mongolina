@@ -12,16 +12,8 @@ use MongoDB\Collection;
 
 class MongoAggregateAllEventStreamFactory
 {
-    /**
-     * @var EventStreamIterator
-     */
-    private $eventStreamIterator;
-
-    public function __construct(
-        EventStreamIterator $eventStreamIterator
-    )
+    public function __construct(private EventStreamIterator $eventStreamIterator)
     {
-        $this->eventStreamIterator = $eventStreamIterator;
     }
 
     public function createStream(Collection $collection, AggregateDescriptor $aggregateDescriptor): AggregateEventStream

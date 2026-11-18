@@ -13,27 +13,17 @@ use MongoDB\Driver\Cursor;
 
 class MongoAggregateAllEventStream implements AggregateEventStream
 {
-    /** @var Collection */
-    private $collection;
+    private int $version;
 
-    /** @var int */
-    private $version;
-
-    /** @var EventStreamIterator */
-    private $eventStreamIterator;
-
-    /** @var AggregateDescriptor */
-    private $aggregateDescriptor;
+    private \Dudulina\Aggregate\AggregateDescriptor $aggregateDescriptor;
 
     public function __construct(
-        Collection $collection,
+        private Collection $collection,
         AggregateDescriptor $aggregateDescriptor,
-        EventStreamIterator $eventStreamIterator
+        private EventStreamIterator $eventStreamIterator
     )
     {
-        $this->collection = $collection;
         $this->version = $this->fetchLatestVersion($aggregateDescriptor);
-        $this->eventStreamIterator = $eventStreamIterator;
         $this->aggregateDescriptor = $aggregateDescriptor;
     }
 
